@@ -1,13 +1,13 @@
-/// <summary> Представляет определённый параметр с максимальным и минимальным значениями </summary>
+п»ї/// <summary> РџСЂРµРґСЃС‚Р°РІР»СЏРµС‚ РѕРїСЂРµРґРµР»С‘РЅРЅС‹Р№ РїР°СЂР°РјРµС‚СЂ СЃ РјР°РєСЃРёРјР°Р»СЊРЅС‹Рј Рё РјРёРЅРёРјР°Р»СЊРЅС‹Рј Р·РЅР°С‡РµРЅРёСЏРјРё </summary>
 public class Int_Stat
 {
-    /// <summary> Максимальное значение параметра </summary>
+    /// <summary> РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
     protected int maxStat;
 
-    /// <summary> Минимальное значение параметра </summary>
+    /// <summary> РњРёРЅРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
     protected int minStat;
 
-    /// <summary> Текущее значение параметра </summary>
+    /// <summary> РўРµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
     protected int stat;
 
     public Int_Stat(int maxStat = 100, int stat = 0, int minStat = 0)
@@ -23,49 +23,49 @@ public class Int_Stat
         }
     }
 
-    /// <summary> Ограничивает текущее значение параметра его максимальным и минимальным значениями </summary>
+    /// <summary> РћРіСЂР°РЅРёС‡РёРІР°РµС‚ С‚РµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° РµРіРѕ РјР°РєСЃРёРјР°Р»СЊРЅС‹Рј Рё РјРёРЅРёРјР°Р»СЊРЅС‹Рј Р·РЅР°С‡РµРЅРёСЏРјРё </summary>
     public void ClampStat() =>
         stat = System.Math.Clamp(stat, minStat, maxStat);
 
     #region INFO
-    /// <summary> Возвращает информацию о параметре в отформатированном виде </summary>
-    /// <returns> Отформатированные данные о параметре </returns>
+    /// <summary> Р’РѕР·РІСЂР°С‰Р°РµС‚ РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РїР°СЂР°РјРµС‚СЂРµ РІ РѕС‚С„РѕСЂРјР°С‚РёСЂРѕРІР°РЅРЅРѕРј РІРёРґРµ </summary>
+    /// <returns> РћС‚С„РѕСЂРјР°С‚РёСЂРѕРІР°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ Рѕ РїР°СЂР°РјРµС‚СЂРµ </returns>
     public string GetInfo() =>
         $"{minStat}-->{stat}-->{maxStat}";
 
-    /// <summary> Выводит в консоль отформатированные данные о параметре </summary>
+    /// <summary> Р’С‹РІРѕРґРёС‚ РІ РєРѕРЅСЃРѕР»СЊ РѕС‚С„РѕСЂРјР°С‚РёСЂРѕРІР°РЅРЅС‹Рµ РґР°РЅРЅС‹Рµ Рѕ РїР°СЂР°РјРµС‚СЂРµ </summary>
     public void LogInfo() =>
         UnityEngine.Debug.Log(GetInfo());
     #endregion
 
     #region GETTERS_AND_SETTERS
-    /// <summary> Возвращает текущее значение параметра </summary>
-    /// <returns> Текущее значение параметра </returns>
+    /// <summary> Р’РѕР·РІСЂР°С‰Р°РµС‚ С‚РµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <returns> РўРµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </returns>
     public int GetStat() => stat;
 
-    /// <summary> Возвращает нормированное текущее значение параметра </summary>
-    /// <returns> Относительное к максимальному и минимальному значение параметра (между 0 и 1) </returns>
+    /// <summary> Р’РѕР·РІСЂР°С‰Р°РµС‚ РЅРѕСЂРјРёСЂРѕРІР°РЅРЅРѕРµ С‚РµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <returns> РћС‚РЅРѕСЃРёС‚РµР»СЊРЅРѕРµ Рє РјР°РєСЃРёРјР°Р»СЊРЅРѕРјСѓ Рё РјРёРЅРёРјР°Р»СЊРЅРѕРјСѓ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° (РјРµР¶РґСѓ 0 Рё 1) </returns>
     public float GetNormalizedStat() =>
         (float)stat / (maxStat - minStat);
 
-    /// <summary> Возвращает максимальное значение параметра </summary>
-    /// <returns> Максимальное значение параметра </returns>
+    /// <summary> Р’РѕР·РІСЂР°С‰Р°РµС‚ РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <returns> РњР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </returns>
     public int GetMaxStat() => maxStat;
 
-    /// <summary> Возвращает минимальное значение параметра </summary>
-    /// <returns> Минимальное значение параметра </returns>
+    /// <summary> Р’РѕР·РІСЂР°С‰Р°РµС‚ РјРёРЅРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <returns> РњРёРЅРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </returns>
     public int GetMinStat() => minStat;
 
-    /// <summary> Устанавливает новое значение параметра </summary>
-    /// <param name="stat"> Новое текущее значение параметра </param>
+    /// <summary> РЈСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РЅРѕРІРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="stat"> РќРѕРІРѕРµ С‚РµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </param>
     public void SetStat(int stat)
     {
         this.stat = stat;
         ClampStat();
     }
 
-    /// <summary> Устанавливает новое максимальное значение параметра </summary>
-    /// <param name="maxStat"> Новое максимальное значение параметра </param>
+    /// <summary> РЈСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РЅРѕРІРѕРµ РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="maxStat"> РќРѕРІРѕРµ РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </param>
     public void SetMaxStat(int maxStat)
     {
         if (maxStat <= minStat)
@@ -77,8 +77,8 @@ public class Int_Stat
         }
     }
 
-    /// <summary> Устанавливает новое минимальноге значение параметра </summary>
-    /// <param name="minStat"> Новое минимальное значение параметра </param>
+    /// <summary> РЈСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ РЅРѕРІРѕРµ РјРёРЅРёРјР°Р»СЊРЅРѕРіРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="minStat"> РќРѕРІРѕРµ РјРёРЅРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </param>
     public void SetMinStat(int minStat)
     {
         if (minStat >= maxStat)
@@ -94,13 +94,13 @@ public class Int_Stat
     #region CHANGERS
 
     #region CHANGERS_ONCE
-    /// <summary> Увеличивает текущее значение параметра </summary>
-    /// <param name="difference"> Величина изменения текущего значения параметра </param>
+    /// <summary> РЈРІРµР»РёС‡РёРІР°РµС‚ С‚РµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="difference"> Р’РµР»РёС‡РёРЅР° РёР·РјРµРЅРµРЅРёСЏ С‚РµРєСѓС‰РµРіРѕ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     public void ChangeStat(int difference) =>
         ChangeByValue(ref stat, difference);
 
-    /// <summary> Умножает текущее значения параметра </summary>
-    /// <param name="factor"> Фактор изменения текущего значения параметра </param>
+    /// <summary> РЈРјРЅРѕР¶Р°РµС‚ С‚РµРєСѓС‰РµРµ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="factor"> Р¤Р°РєС‚РѕСЂ РёР·РјРµРЅРµРЅРёСЏ С‚РµРєСѓС‰РµРіРѕ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     public void ChangeStat(float factor)
     {
         if (factor <= 0)
@@ -109,8 +109,8 @@ public class Int_Stat
             ChangeByFactor(ref stat, factor);
     }
 
-    /// <summary> Увеличивает максимальное значение параметра </summary>
-    /// <param name="difference"> Величина изменения максимального значения параметра </param>
+    /// <summary> РЈРІРµР»РёС‡РёРІР°РµС‚ РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="difference"> Р’РµР»РёС‡РёРЅР° РёР·РјРµРЅРµРЅРёСЏ РјР°РєСЃРёРјР°Р»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     public void ChangeMaxStat(int difference)
     {
         if (maxStat + difference <= minStat)
@@ -119,8 +119,8 @@ public class Int_Stat
             ChangeByValue(ref maxStat, difference);
     }
 
-    /// <summary> Умножает максимальное значения параметра </summary>
-    /// <param name="factor"> Фактор изменения максимального значения параметра </param>
+    /// <summary> РЈРјРЅРѕР¶Р°РµС‚ РјР°РєСЃРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="factor"> Р¤Р°РєС‚РѕСЂ РёР·РјРµРЅРµРЅРёСЏ РјР°РєСЃРёРјР°Р»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     public void ChangeMaxStat(float factor)
     {
         if (factor <= 0)
@@ -129,8 +129,8 @@ public class Int_Stat
             ChangeByFactor(ref maxStat, factor);
     }
 
-    /// <summary> Увеличивает минимальное значение параметра </summary>
-    /// <param name="difference"> Величина изменения минимального значения параметра </param>
+    /// <summary> РЈРІРµР»РёС‡РёРІР°РµС‚ РјРёРЅРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="difference"> Р’РµР»РёС‡РёРЅР° РёР·РјРµРЅРµРЅРёСЏ РјРёРЅРёРјР°Р»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     public void ChangeMinStat(int difference)
     {
         if (minStat + difference >= maxStat)
@@ -139,8 +139,8 @@ public class Int_Stat
             ChangeByValue(ref minStat, difference);
     }
 
-    /// <summary> Умножает минимальное значения параметра </summary>
-    /// <param name="factor"> Фактор изменения минимального значения параметра </param>
+    /// <summary> РЈРјРЅРѕР¶Р°РµС‚ РјРёРЅРёРјР°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </summary>
+    /// <param name="factor"> Р¤Р°РєС‚РѕСЂ РёР·РјРµРЅРµРЅРёСЏ РјРёРЅРёРјР°Р»СЊРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     public void ChangeMinStat(float factor)
     {
         if (factor <= 0)
@@ -149,18 +149,18 @@ public class Int_Stat
             ChangeByFactor(ref minStat, factor);
     }
 
-    /// <summary> Увеличивает переданный параметр на величину </summary>
-    /// <param name="value"> Изменяетмый параметр </param>
-    /// <param name="difference"> Величина изменения параметра </param>
+    /// <summary> РЈРІРµР»РёС‡РёРІР°РµС‚ РїРµСЂРµРґР°РЅРЅС‹Р№ РїР°СЂР°РјРµС‚СЂ РЅР° РІРµР»РёС‡РёРЅСѓ </summary>
+    /// <param name="value"> РР·РјРµРЅСЏРµС‚РјС‹Р№ РїР°СЂР°РјРµС‚СЂ </param>
+    /// <param name="difference"> Р’РµР»РёС‡РёРЅР° РёР·РјРµРЅРµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     private void ChangeByValue(ref int value, int difference)
     {
         value += difference;
         ClampStat();
     }
 
-    /// <summary> Умножает переданный параметр на фактор </summary>
-    /// <param name="value"> Изменяетмый параметр </param>
-    /// <param name="factor"> Фактор изменения параметра </param>
+    /// <summary> РЈРјРЅРѕР¶Р°РµС‚ РїРµСЂРµРґР°РЅРЅС‹Р№ РїР°СЂР°РјРµС‚СЂ РЅР° С„Р°РєС‚РѕСЂ </summary>
+    /// <param name="value"> РР·РјРµРЅСЏРµС‚РјС‹Р№ РїР°СЂР°РјРµС‚СЂ </param>
+    /// <param name="factor"> Р¤Р°РєС‚РѕСЂ РёР·РјРµРЅРµРЅРёСЏ РїР°СЂР°РјРµС‚СЂР° </param>
     private void ChangeByFactor(ref int value, float factor)
     {
         value = (int)(value * factor);
