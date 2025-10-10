@@ -15,6 +15,8 @@ public struct equippedGun
 public class Player : MonoBehaviour
 {
     [HideInInspector] public float f_JumpPower = 120.0f;
+    public InputActionReference jump;
+    public InputActionReference shoot;
     protected CharacterController moveController;
     protected Camera mainCam;
     private bool isGrounded_b;
@@ -22,11 +24,7 @@ public class Player : MonoBehaviour
     public List<equippedGun> gunsInStore;
     public TMP_Text _ammoText;
     public Gun primaryGun;
-    public float mouseSensitivity= 2.0f;
     private int chosenGunId = 0;
-    private float XRotation;
-    private float YRotation;
-
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
@@ -35,9 +33,8 @@ public class Player : MonoBehaviour
         moveController = GetComponent<CharacterController>();
         mainCam = GetComponentInChildren<Camera>();
         AddGun(primaryGun);
-        Cursor.visible = false;
     }
-    public void OnJump(InputAction.CallbackContext context)
+    void Jump(InputAction.CallbackContext obj)
     {
         Debug.Log("Jumped");
         if (moveController.isGrounded)
@@ -45,17 +42,6 @@ public class Player : MonoBehaviour
             moveDir.y = f_JumpPower;
 
         }
-    }
-
-    public void Look(InputAction.CallbackContext context)
-    {
-        Vector2 InputDelta = context.ReadValue<Vector2>();
-        //XRotation -= InputDelta.y;
-        XRotation = Mathf.Clamp(XRotation - (InputDelta.y * (mouseSensitivity/5.0f)), -90.0f, 90.0f);
-        YRotation += (InputDelta.x/5.0f);
-        
-        mainCam.transform.localRotation = Quaternion.Euler(XRotation, YRotation, 0);
-
     }
 
     // Update is called once per frame
@@ -67,6 +53,17 @@ public class Player : MonoBehaviour
         }
         moveDir.y -= 9.8f * Time.deltaTime;
         moveController.Move(moveDir * Time.deltaTime);
+
+    }
+    void OnEnable()
+    {
+        jump.action.started += Jump;
+        shoot.action.started += Shoot;
+    }
+    void OnDisable()
+    {
+        jump.action.started -= Jump;
+        shoot.action.started -= Shoot;
 
     }
     public void AddGun(Gun _gun)
@@ -87,9 +84,8 @@ public class Player : MonoBehaviour
         _ammoText.text = gunsInStore[chosenGunId].clipAmmo + "/" + gunsInStore[chosenGunId].currentAmmo;
 
     }
-    public void OnShoot(InputAction.CallbackContext context)
+    void Shoot(InputAction.CallbackContext obj)
     {
-        if (context.started){
         equippedGun depletedGun = gunsInStore[chosenGunId];
         depletedGun.clipAmmo = gunsInStore[chosenGunId].clipAmmo-1;
         gunsInStore[chosenGunId] = depletedGun;
@@ -97,7 +93,7 @@ public class Player : MonoBehaviour
         if (gunsInStore[chosenGunId].clipAmmo <= 0)
         {
             Reload();
-        }}
+        }
     }
 
     }
