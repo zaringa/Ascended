@@ -7,4 +7,5 @@ public class Gun : ScriptableObject
     public int maxAmmo;
     public int maxClipAmmo;
     public float damage;
+
 }

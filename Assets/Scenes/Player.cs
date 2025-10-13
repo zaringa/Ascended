@@ -4,14 +4,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.InputSystem;
 
-public struct equippedGun
-{
-    public Gun gunItem;
-    public int currentAmmo;
 
-    public int clipAmmo;
-    
-}
 public class Player : MonoBehaviour
 {
     [HideInInspector] public float f_JumpPower = 120.0f;
@@ -19,7 +12,7 @@ public class Player : MonoBehaviour
     protected Camera mainCam;
     private bool isGrounded_b;
     private Vector3 moveDir = Vector3.zero;
-    public List<equippedGun> gunsInStore;
+    public List<EquippedGun> gunsInStore;
     public TMP_Text _ammoText;
     public Gun primaryGun;
     public float mouseSensitivity= 2.0f;
@@ -31,7 +24,7 @@ public class Player : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        gunsInStore = new List<equippedGun>();
+        gunsInStore = new List<EquippedGun>();
         moveController = GetComponent<CharacterController>();
         mainCam = GetComponentInChildren<Camera>();
         AddGun(primaryGun);
@@ -71,33 +64,19 @@ public class Player : MonoBehaviour
     }
     public void AddGun(Gun _gun)
     {
-        gunsInStore.Add(new equippedGun { gunItem = _gun, currentAmmo = _gun.maxAmmo - _gun.maxClipAmmo, clipAmmo = _gun.maxClipAmmo });
+        gunsInStore.Add(new EquippedGun { gunItem = _gun, currentAmmo = _gun.maxAmmo - _gun.maxClipAmmo, currentClipAmmo = _gun.maxClipAmmo });
         chosenGunId = gunsInStore.Count - 1;
-        _ammoText.text = gunsInStore[chosenGunId].clipAmmo + "/" + gunsInStore[chosenGunId].currentAmmo;
+        _ammoText.text = gunsInStore[chosenGunId].currentClipAmmo + "/" + gunsInStore[chosenGunId].currentAmmo;
         
         
     }
-    void Reload()
-    {
-        //make delay bla bla
-        equippedGun repelishedGun = gunsInStore[chosenGunId];
-        repelishedGun.clipAmmo = Math.Clamp(repelishedGun.currentAmmo, 0, repelishedGun.gunItem.maxClipAmmo);
-        repelishedGun.currentAmmo -= repelishedGun.clipAmmo;
-        gunsInStore[chosenGunId] = repelishedGun;
-        _ammoText.text = gunsInStore[chosenGunId].clipAmmo + "/" + gunsInStore[chosenGunId].currentAmmo;
 
-    }
     public void OnShoot(InputAction.CallbackContext context)
     {
         if (context.started){
-        equippedGun depletedGun = gunsInStore[chosenGunId];
-        depletedGun.clipAmmo = gunsInStore[chosenGunId].clipAmmo-1;
-        gunsInStore[chosenGunId] = depletedGun;
-        _ammoText.text = gunsInStore[chosenGunId].clipAmmo + "/" + gunsInStore[chosenGunId].currentAmmo;
-        if (gunsInStore[chosenGunId].clipAmmo <= 0)
-        {
-            Reload();
-        }}
+            gunsInStore[chosenGunId].Shoot();
+            _ammoText.text = gunsInStore[chosenGunId].currentClipAmmo + "/" + gunsInStore[chosenGunId].currentAmmo;
+        }
     }
 
     }
