@@ -988,7 +988,7 @@ GameObject:
   - component: {fileID: 1358085933}
   m_Layer: 0
   m_Name: Cube (3)
-  m_TagString: Untagged
+  m_TagString: Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1080,7 +1080,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 3.0278997, y: 2.01, z: -7.7684402}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalScale: {x: 2, y: 4.5, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1833263588}
@@ -1467,7 +1467,12 @@ MonoBehaviour:
   jumpHeight: 2
   jumpBufferTime: 0.25
   coyoteTime: 0.075
+  wallJumpForce: 600
+  wallCheckDistance: 0.3
+  wallTag: Wall
+  wallSlideSpeed: -1
   gravity: -9.81
+  momentumDecay: 10
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0
