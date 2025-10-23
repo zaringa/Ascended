@@ -13,18 +13,27 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
 
-    // --- Jump & Wall Jump ---
+    // --- Jump & Coyote/Buffer ---
     [Header("Jump")]
     [SerializeField] private bool allowJump = true;
     [SerializeField] private float jumpHeight = 2f;
     [SerializeField] private float jumpBufferTime = 0.1f;
     [SerializeField] private float coyoteTime = 0.1f;
 
+    // --- Wall Jump Settings ---
     [Header("Wall Jump Settings")]
-    [SerializeField] private float wallJumpForce = 7f; // Сила горизонтального отскока
-    [SerializeField] private float wallCheckDistance = 0.6f; // Дистанция проверки стены (должна быть > радиуса контроллера)
-    [SerializeField] private string wallTag = "Wall"; // ТЕГ, который должен быть назначен стенам
-    [SerializeField] private float wallSlideSpeed = -1f;
+    [SerializeField] private float wallCheckDistance = 0.6f;
+    [SerializeField] private string wallTag = "Wall";        
+    [SerializeField] private float wallSlideSpeed = -1f;      
+
+    [Header("Wall Jump Forces")]
+    [SerializeField] private float wallJumpHeight = 3f;      // Новая высота прыжка при отскоке
+    [SerializeField] private float wallJumpForce = 20f;      // Горизонтальный толчок (импульс)
+    [SerializeField] private float momentumDecay = 10f;       // Скорость затухания горизонтального импульса
+    [SerializeField] private float wallJumpCooldownTime = 0.15f; // Время игнорирования ограничений стены
+    
+    // Управляемость в воздухе во время отскока (0.95 по требованию пользователя)
+    [SerializeField] private float airControlDuringWallJump = 0.95f; 
 
     // --- Gravity ---
     [Header("Gravity")]
@@ -36,11 +45,10 @@ public class PlayerController : MonoBehaviour
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
     private bool wasGroundedLastFrame;
-    private Vector3 wallNormal = Vector3.zero; // Нормаль обнаруженной стены
 
-    // НОВЫЕ ПОЛЯ ДЛЯ ПЛАВНОГО ОТСКОКА
-    private Vector3 wallJumpMomentum = Vector3.zero; // Текущий импульс отскока
-    [SerializeField] private float momentumDecay = 10f; // Скорость ослабления импульса
+    private Vector3 wallNormal = Vector3.zero;       
+    private Vector3 wallJumpMomentum = Vector3.zero; 
+    private float wallJumpCooldownTimer; // Таймер для игнорирования ограничений
 
     void Awake()
     {
@@ -69,7 +77,6 @@ public class PlayerController : MonoBehaviour
         HandleJump();
         ApplyGravity();
         
-        // Перемещение персонажа
         characterController.Move(velocity * Time.deltaTime);
         wasGroundedLastFrame = characterController.isGrounded;
     }
@@ -77,11 +84,13 @@ public class PlayerController : MonoBehaviour
     void UpdateTimers()
     {
         if (jumpBufferCounter > 0) jumpBufferCounter -= Time.deltaTime;
+        if (wallJumpCooldownTimer > 0) wallJumpCooldownTimer -= Time.deltaTime; // Уменьшаем кулдаун
         
         if (characterController.isGrounded)
         {
             coyoteTimeCounter = coyoteTime;
-            wallNormal = Vector3.zero; // Сброс нормали при касании земли
+            wallNormal = Vector3.zero; 
+            wallJumpMomentum = Vector3.zero; 
         }
         else if (wasGroundedLastFrame)
         {
@@ -89,7 +98,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- ОБНАРУЖЕНИЕ СТЕНЫ ПО ТЕГУ ---
     void HandleWallCheck()
     {
         wallNormal = Vector3.zero;
@@ -100,36 +108,29 @@ public class PlayerController : MonoBehaviour
         Vector3 origin = transform.position;
         float radius = characterController.radius;
         
-        // Определяем направление проверки (используем направление взгляда, если нет движения)
         Vector3 checkDirection = transform.forward; 
-
         Vector2 input = movementAction.action.ReadValue<Vector2>();
+        
         if (input.magnitude > 0.1f)
         {
-             // Если игрок движется, проверяем в направлении его движения
              Vector3 moveDirection = transform.right * input.x + transform.forward * input.y;
              checkDirection = moveDirection.normalized;
         }
 
-        // SphereCast БЕЗ LayerMask (проверяет все)
-        // Physics.AllLayers (по умолчанию)
         if (Physics.SphereCast(origin, radius, checkDirection, out hit, wallCheckDistance)) 
         {
-            // *** ПРОВЕРКА ПО ТЕГУ ***
             if (!hit.collider.CompareTag(wallTag)) 
             {
                 return;
             }
             
-            // Проверка: Стена должна быть вертикальной
-            // Угол > 45 и < 135 гарантирует вертикальную стену, не пол и не потолок
             if (Vector3.Angle(Vector3.up, hit.normal) > 45f && Vector3.Angle(Vector3.up, hit.normal) < 135f)
             {
-                wallNormal = hit.normal;
-                
-                // Сбрасываем горизонтальную скорость для "прилипания"
-                velocity.x = 0;
-                velocity.z = 0;
+                // Стена обнаружена, но не сбрасываем wallNormal, если активен кулдаун
+                if (wallJumpCooldownTimer <= 0)
+                {
+                    wallNormal = hit.normal;
+                }
             }
         }
     }
@@ -139,28 +140,26 @@ public class PlayerController : MonoBehaviour
         Vector2 input = movementAction.action.ReadValue<Vector2>();
         Vector3 moveDirection = transform.right * input.x + transform.forward * input.y;
         
-        // 1. Управление (Movement)
-        // Если есть активный импульс от стены, игрок не может сразу пересилить его
-        float controlModifier = (wallJumpMomentum.magnitude > 0.1f) ? 0.2f : 1f; // Снижаем контроль при отскоке
-        
-        velocity.x = Mathf.Lerp(velocity.x, moveDirection.x * movementSpeed, controlModifier);
-        velocity.z = Mathf.Lerp(velocity.z, moveDirection.z * movementSpeed, controlModifier);
-
-
-        // 2. Применение и ослабление Импульса (Momentum)
+        // 1. Обработка импульса от Wall Jump
         if (wallJumpMomentum.magnitude > 0.01f)
         {
-            // Применяем импульс к текущей горизонтальной скорости
-            velocity.x += wallJumpMomentum.x * Time.deltaTime;
-            velocity.z += wallJumpMomentum.z * Time.deltaTime;
+            // Горизонтальная скорость игрока СТАНОВИТСЯ импульсом отскока
+            velocity.x = wallJumpMomentum.x;
+            velocity.z = wallJumpMomentum.z;
 
-            // Ослабляем импульс со временем (плавное затухание)
-            wallJumpMomentum = Vector3.Lerp(wallJumpMomentum, Vector3.zero, momentumDecay * Time.deltaTime);
+            // КОРРЕКЦИЯ ДВИЖЕНИЯ В ВОЗДУХЕ (по требованию)
+            velocity.x += moveDirection.x * movementSpeed * airControlDuringWallJump;
+            velocity.z += moveDirection.z * movementSpeed * airControlDuringWallJump;
+
+            // Ослабляем импульс со временем
+            wallJumpMomentum = Vector3.MoveTowards(wallJumpMomentum, Vector3.zero, momentumDecay * Time.deltaTime);
         } 
-        // Если импульс почти нулевой, убедимся, что его нет
-        else if (wallJumpMomentum.magnitude != 0)
+        else
         {
+            // 2. Обычное движение
             wallJumpMomentum = Vector3.zero;
+            velocity.x = moveDirection.x * movementSpeed;
+            velocity.z = moveDirection.z * movementSpeed;
         }
     }
 
@@ -173,90 +172,83 @@ public class PlayerController : MonoBehaviour
     {
         if (!allowJump) return;
 
-        // *** РАСЧЕТ ОДИН РАЗ В НАЧАЛЕ ***
+        // Расчет силы для обычного прыжка
         float jumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        // Расчет силы для вертикального отскока (для плавного, но мощного вертикального импульса)
+        float wallJumpVerticalImpulse = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
 
         bool canJump = characterController.isGrounded || coyoteTimeCounter > 0;
         bool canWallJump = wallNormal != Vector3.zero && !characterController.isGrounded;
-
+        
         if (jumpBufferCounter > 0)
         {
             if (canWallJump)
             {
-                // ЛОГИКА ОТСКОКА ОТ СТЕНЫ
+                // Применяем ГОРИЗОНТАЛЬНЫЙ ИМПУЛЬС
+                wallJumpMomentum = wallNormal * wallJumpForce; 
+                
+                // Устанавливаем ВЕРТИКАЛЬНУЮ СКОРОСТЬ
+                velocity.y = wallJumpVerticalImpulse; 
 
-                // Применяем горизонтальный импульс
-                wallJumpMomentum = wallNormal * wallJumpForce;
-
-                // Устанавливаем вертикальную скорость
-                velocity.y = jumpForce;
-
+                // *** АКТИВИРУЕМ КУЛДАУН ***
+                wallJumpCooldownTimer = wallJumpCooldownTime; 
+                
+                // Сброс состояния
                 jumpBufferCounter = 0f;
                 coyoteTimeCounter = 0f;
-                wallNormal = Vector3.zero;
+                wallNormal = Vector3.zero; // Сброс, чтобы отключить wallSlide
+                
+                Debug.Log("WALL JUMP!");
             }
             else if (canJump)
             {
                 // ЛОГИКА ОБЫЧНОГО ПРЫЖКА
-                velocity.y = jumpForce; // <-- jumpForce доступен здесь
+                velocity.y = jumpForce;
                 jumpBufferCounter = 0f;
                 coyoteTimeCounter = 0f;
             }
         }
     }
-    
+
     void ApplyGravity()
     {
-        // Условие скольжения по стене: есть нормаль стены И игрок не на земле
         bool isSlidingOnWall = wallNormal != Vector3.zero && !characterController.isGrounded;
+        bool isWallJumpCooldownActive = wallJumpCooldownTimer > 0;
 
         if (characterController.isGrounded && velocity.y < 0)
         {
             velocity.y = -2f;
         }
-        else if (isSlidingOnWall)
+        // Ограничения и скольжение работают только если мы на стене И НЕ в кулдауне
+        else if (isSlidingOnWall && !isWallJumpCooldownActive) 
         {
-            // Применяем гравитацию, чтобы тянуть игрока вниз
+            // Применяем гравитацию, чтобы тянуть вниз
             velocity.y += gravity * Time.deltaTime; 
             
-            // *** КОРРЕКЦИЯ: Использование Clamp ***
-            // Ограничиваем вертикальную скорость: 
-            // 1. Минимум: wallSlideSpeed (например, -1f)
-            // 2. Максимум: 0f (запрет движения вверх вдоль стены)
+            // ОГРАНИЧЕНИЕ СКОРОСТИ
             velocity.y = Mathf.Clamp(velocity.y, wallSlideSpeed, 0f); 
+            
+            // Сбрасываем горизонтальное движение, если оно не вызвано импульсом отскока
+            if (wallJumpMomentum.magnitude < 0.01f)
+            {
+                 velocity.x = 0;
+                 velocity.z = 0;
+            }
         }
         else
         {
-            // Применяем стандартную гравитацию
+            // Стандартная гравитация (включая прыжок и кулдаун отскока)
             velocity.y += gravity * Time.deltaTime;
         }
     }
     
-    // --- ВИЗУАЛИЗАЦИЯ ДЛЯ ОТЛАДКИ ---
+    // --- ВИЗУАЛИЗАЦИЯ ДЛЯ ОТЛАДКИ (GIZMOS) ---
     private void OnDrawGizmos()
     {
-        // Проверяем, что компонент и игра запущены
         if (Application.isPlaying && characterController != null && wallNormal != Vector3.zero)
         {
-            // Рисуем зеленую линию, показывающую нормаль (направление отскока)
             Gizmos.color = Color.green;
             Gizmos.DrawLine(transform.position, transform.position + wallNormal * 1.5f);
-        }
-        else if (characterController != null && !characterController.isGrounded)
-        {
-            // Визуализируем дистанцию, на которой ищется стена (желтая сфера)
-            Gizmos.color = Color.yellow;
-            Vector3 checkDirection = transform.forward;
-            Vector2 input = movementAction.action.ReadValue<Vector2>();
-            if (input.magnitude > 0.1f)
-            {
-                 Vector3 moveDirection = transform.right * input.x + transform.forward * input.y;
-                 checkDirection = moveDirection.normalized;
-            }
-
-            Vector3 origin = transform.position;
-            float radius = characterController.radius;
-            Gizmos.DrawWireSphere(origin + checkDirection * wallCheckDistance, radius);
         }
     }
 }

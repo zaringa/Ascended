@@ -1080,7 +1080,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 3.0278997, y: 2.01, z: -7.7684402}
-  m_LocalScale: {x: 2, y: 4.5, z: 2}
+  m_LocalScale: {x: 2, y: 3.55, z: 4.23}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1833263588}
@@ -1467,12 +1467,15 @@ MonoBehaviour:
   jumpHeight: 2
   jumpBufferTime: 0.25
   coyoteTime: 0.075
-  wallJumpForce: 600
   wallCheckDistance: 0.3
   wallTag: Wall
   wallSlideSpeed: -1
-  gravity: -9.81
+  wallJumpHeight: 2
+  wallJumpForce: 10
   momentumDecay: 10
+  wallJumpCooldownTime: 0.15
+  airControlDuringWallJump: 0.95
+  gravity: -9.81
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0
