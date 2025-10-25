@@ -17,10 +17,11 @@ public class PlayerLook : MonoBehaviour
     [SerializeField] private float maxVerticalAngle = 90f;
 
     [Header("References")]
-    [SerializeField] private Transform playerBody;
+     public Transform playerBody;
 
     private float verticalRotation = 0f;
     private bool isFirstFrame = true;
+    private Vector2 lookAxis;
 
     void Start()
     {
@@ -68,6 +69,7 @@ public class PlayerLook : MonoBehaviour
 
         float mouseX = lookInput.x * sensitivity;
         float mouseY = lookInput.y * sensitivity;
+
 
         // Поворот игрока по горизонтали (Y оси)
         playerBody.Rotate(Vector3.up * mouseX);

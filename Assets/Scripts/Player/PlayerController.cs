@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections;
+using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
@@ -6,10 +9,13 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Input")]
     [SerializeField] private InputActionReference movementAction;
+    [SerializeField] private InputActionReference dashAction;
     [SerializeField] private InputActionReference jumpAction;
 
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
+    [SerializeField] private float dashSpeed = 200.0f;
+
 
     [Header("Jump")]
     [SerializeField] private bool allowJump = true;
@@ -25,6 +31,8 @@ public class PlayerController : MonoBehaviour
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
     private bool wasGroundedLastFrame;
+    private Vector3 bufferMoveDir;
+    private Vector3 moveDirection;
 
     void Awake()
     {
@@ -36,6 +44,9 @@ public class PlayerController : MonoBehaviour
         movementAction?.action.Enable();
         jumpAction?.action.Enable();
         jumpAction.action.performed += OnJumpPerformed;
+        dashAction?.action.Enable();
+        dashAction.action.performed += OnDashPerformed;
+
     }
 
     void OnDisable()
@@ -43,12 +54,20 @@ public class PlayerController : MonoBehaviour
         movementAction?.action.Disable();
         jumpAction?.action.Disable();
         jumpAction.action.performed -= OnJumpPerformed;
+        dashAction?.action.Disable();
+        dashAction.action.performed -= OnDashPerformed;
+
+
     }
 
     void Update()
     {
         UpdateTimers();
-        HandleMovement();
+
+        if (bufferMoveDir == Vector3.zero)
+        {
+            HandleMovement();
+        }
         HandleJump();
         ApplyGravity();
         characterController.Move(velocity * Time.deltaTime);
@@ -72,7 +91,7 @@ public class PlayerController : MonoBehaviour
     void HandleMovement()
     {
         Vector2 input = movementAction.action.ReadValue<Vector2>();
-        Vector3 moveDirection = transform.right * input.x + transform.forward * input.y;
+        moveDirection = transform.right * input.x + transform.forward * input.y;
         velocity.x = moveDirection.x * movementSpeed;
         velocity.z = moveDirection.z * movementSpeed;
     }
@@ -80,6 +99,31 @@ public class PlayerController : MonoBehaviour
     void OnJumpPerformed(InputAction.CallbackContext context)
     {
         jumpBufferCounter = jumpBufferTime;
+    }
+
+    void OnDashPerformed(InputAction.CallbackContext context)
+    {
+        Debug.Log("Attempting to Dash!");
+        bufferMoveDir = velocity;
+        if (moveDirection == Vector3.zero)
+        {
+            velocity = GetComponentInChildren<PlayerLook>().playerBody.forward * dashSpeed;
+        }
+        else
+        {
+            velocity = moveDirection * 200;
+        }
+        StartCoroutine(ReturnToNormal(.06f));
+        //dashwhereplyrmoves(default-forward)
+    }
+    IEnumerator ReturnToNormal(float secondsRemaining)
+    {
+        
+        yield return new WaitForSeconds(secondsRemaining);
+        velocity = bufferMoveDir;
+        Debug.Log("Bacc to normal");
+
+        bufferMoveDir = Vector3.zero;
     }
 
     void HandleJump()
