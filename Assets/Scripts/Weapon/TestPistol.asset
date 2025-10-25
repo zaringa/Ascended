@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19754f66ccc698e49968e95482947c82, type: 3}
+  m_Name: TestPistol
+  m_EditorClassIdentifier: Assembly-CSharp::GunInfo
+  gunName: TestPistol
+  weaponSprite: {fileID: 0}
+  description: Standard issue weapon.
+  type: 1
+  weaponModelPrefab: {fileID: 0}
+  damage: 10
+  maxMagazineCapacity: 10
+  fireRate: 0.5
+  reloadTime: 1
+  projectilePrefab: {fileID: 537364069060620911, guid: 4096a0c0fcfeba33c886b221302d88a2, type: 3}
+  projectileSpeed: 10
+  projectileLifetime: 5
+  hitDecalPrefab: {fileID: 6185541065179001885, guid: 998c82f27654c3c4aa0defd7f597ddfa, type: 3}
+  enemyHitDecalPrefab: {fileID: 0}
+  decalLifetime: 10
+  meleeRange: 2
+  meleeAttackDuration: 0.5
+  meleeHitLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  meleeAttackAnimation: {fileID: 0}
+  fireSound: {fileID: 0}
+  reloadSound: {fileID: 0}
+  meleeSwingSound: {fileID: 0}
+  meleeHitSound: {fileID: 0}
