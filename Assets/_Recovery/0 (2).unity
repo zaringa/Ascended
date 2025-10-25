@@ -1460,23 +1460,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0db8c9590169c84f96ec60f96ed3746, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  movementAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  jumpAction: {fileID: -6000595813187283402, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  slideAction: {fileID: 4921178424287575937, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  movementSpeed: 5
-  allowJump: 1
-  jumpHeight: 2
-  jumpBufferTime: 0.1
-  coyoteTime: 0.1
-  gravity: -9.81
-  slideDuration: 0.3
-  slideSpeed: 15
-  slideFriction: 7.35
-  slideHeight: 1
-  cameraSlideOffset: -0.1
-  heightLerpSpeed: 20
-  cameraRoot: {fileID: 1620118467}
-  slideCooldown: 1.5
+  _movementAction: {fileID: 0}
+  _jumpAction: {fileID: 0}
+  _slideAction: {fileID: 0}
+  _movementSpeed: 5
+  _allowJump: 1
+  _jumpHeight: 2
+  _jumpBufferTime: 0.1
+  _coyoteTime: 0.1
+  _gravity: -9.81
+  _slideDuration: 0.8
+  _slideSpeed: 10
+  _slideFriction: 5
+  _slideHeight: 0.9
+  _cameraSlideOffset: -0.4
+  _heightLerpSpeed: 10
+  _cameraRoot: {fileID: 0}
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0

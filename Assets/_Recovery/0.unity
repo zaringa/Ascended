@@ -1466,17 +1466,15 @@ MonoBehaviour:
   movementSpeed: 5
   allowJump: 1
   jumpHeight: 2
-  jumpBufferTime: 0.1
-  coyoteTime: 0.1
+  jumpBufferTime: 0.25
+  coyoteTime: 0.075
   gravity: -9.81
-  slideDuration: 0.3
-  slideSpeed: 15
-  slideFriction: 7.35
-  slideHeight: 1
-  cameraSlideOffset: -0.1
-  heightLerpSpeed: 20
+  slideDuration: 0.8
+  slideSpeed: 10
+  slideFriction: 5
+  slideHeight: 0.9
+  cameraSlideOffset: 0
   cameraRoot: {fileID: 1620118467}
-  slideCooldown: 1.5
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0

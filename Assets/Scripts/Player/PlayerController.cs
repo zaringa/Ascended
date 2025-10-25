@@ -7,6 +7,7 @@ public class PlayerController : MonoBehaviour
     [Header("Input")]
     [SerializeField] private InputActionReference movementAction;
     [SerializeField] private InputActionReference jumpAction;
+    [SerializeField] private InputActionReference slideAction;
 
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
@@ -20,42 +21,68 @@ public class PlayerController : MonoBehaviour
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
 
+    [Header("Slide Settings")]
+    [SerializeField] private float slideDuration = 0.3f;
+    [SerializeField] private float slideSpeed = 15f;
+    [SerializeField] private float slideFriction = 7.35f;
+    [SerializeField] private float slideHeight = 1f;
+    [SerializeField] private float cameraSlideOffset = -0.1f;
+    [SerializeField] private float heightLerpSpeed = 20f;
+    [SerializeField] private Transform cameraRoot;
+    [SerializeField] private float slideCooldown = 1.5f;
+
     private CharacterController characterController;
     private Vector3 velocity;
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
+    private float slideCooldownCounter;
     private bool wasGroundedLastFrame;
+    private bool isSliding;
+    private float slideTimer;
+    private Vector3 slideDirection;
+    private float originalHeight;
+    private Vector3 originalCameraLocalPos;
 
-    void Awake()
+    private void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        originalHeight = characterController.height;
+        if (cameraRoot != null)
+        {
+            originalCameraLocalPos = cameraRoot.localPosition;
+        }
     }
 
-    void OnEnable()
+    private void OnEnable()
     {
         movementAction?.action.Enable();
         jumpAction?.action.Enable();
+        slideAction?.action.Enable();
         jumpAction.action.performed += OnJumpPerformed;
+        slideAction.action.performed += OnSlidePerformed;
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
         movementAction?.action.Disable();
         jumpAction?.action.Disable();
+        slideAction?.action.Disable();
         jumpAction.action.performed -= OnJumpPerformed;
+        slideAction.action.performed -= OnSlidePerformed;
     }
 
-    void Update()
+    private void Update()
     {
         UpdateTimers();
         HandleMovement();
         HandleJump();
+        HandleSlide();
         ApplyGravity();
         characterController.Move(velocity * Time.deltaTime);
         wasGroundedLastFrame = characterController.isGrounded;
     }
 
-    void UpdateTimers()
+    private void UpdateTimers()
     {
         if (jumpBufferCounter > 0) jumpBufferCounter -= Time.deltaTime;
         
@@ -67,22 +94,26 @@ public class PlayerController : MonoBehaviour
         {
             coyoteTimeCounter -= Time.deltaTime;
         }
+        
+        if (slideCooldownCounter > 0) slideCooldownCounter -= Time.deltaTime;
     }
 
-    void HandleMovement()
+    private void HandleMovement()
     {
+        if (isSliding) return;
+
         Vector2 input = movementAction.action.ReadValue<Vector2>();
         Vector3 moveDirection = transform.right * input.x + transform.forward * input.y;
         velocity.x = moveDirection.x * movementSpeed;
         velocity.z = moveDirection.z * movementSpeed;
     }
 
-    void OnJumpPerformed(InputAction.CallbackContext context)
+    private void OnJumpPerformed(InputAction.CallbackContext context)
     {
         jumpBufferCounter = jumpBufferTime;
     }
 
-    void HandleJump()
+    private void HandleJump()
     {
         if (!allowJump) return;
 
@@ -98,7 +129,74 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void ApplyGravity()
+    private void OnSlidePerformed(InputAction.CallbackContext context)
+    {
+        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f && slideCooldownCounter <= 0f)
+        {
+            StartSlide();
+        }
+    }
+
+    private void HandleSlide()
+    {
+        if (!isSliding) 
+        {
+            LerpHeightAndCameraBack();
+            return;
+        }
+
+        UpdateSlide();
+        if (slideTimer <= 0)
+        {
+            EndSlide();
+        }
+    }
+
+    private void StartSlide()
+    {
+        isSliding = true;
+        slideTimer = slideDuration;
+        slideCooldownCounter = slideCooldown;
+
+        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        slideDirection = currentHorizontalVelocity.normalized;
+    }
+
+    private void UpdateSlide()
+    {
+        slideTimer -= Time.deltaTime;
+
+        float currentSlideSpeed = slideSpeed - (slideFriction * (slideDuration - slideTimer));
+        currentSlideSpeed = Mathf.Max(currentSlideSpeed, movementSpeed);
+
+        velocity.x = slideDirection.x * currentSlideSpeed;
+        velocity.z = slideDirection.z * currentSlideSpeed;
+
+        characterController.height = Mathf.Lerp(characterController.height, slideHeight, heightLerpSpeed * Time.deltaTime);
+
+        if (cameraRoot != null)
+        {
+            Vector3 targetCameraPos = originalCameraLocalPos + new Vector3(0f, cameraSlideOffset, 0f);
+            cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, targetCameraPos, heightLerpSpeed * Time.deltaTime);
+        }
+    }
+
+    private void EndSlide()
+    {
+        isSliding = false;
+    }
+
+    private void LerpHeightAndCameraBack()
+    {
+        characterController.height = Mathf.Lerp(characterController.height, originalHeight, heightLerpSpeed * Time.deltaTime);
+        if (cameraRoot != null)
+        {
+            cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, originalCameraLocalPos, heightLerpSpeed * Time.deltaTime);
+        }
+    }
+
+    private void ApplyGravity()
     {
         if (characterController.isGrounded && velocity.y < 0)
         {
