@@ -14,6 +14,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
+    [SerializeField] private float dashSpeed = 200.0f;
+
 
     [Header("Jump")]
     [SerializeField] private bool allowJump = true;
@@ -103,21 +105,17 @@ public class PlayerController : MonoBehaviour
     {
         Debug.Log("Attempting to Dash!");
         bufferMoveDir = velocity;
-        if (characterController.isGrounded)
+        if (moveDirection == Vector3.zero)
         {
-            velocity = moveDirection*200;
-            StartCoroutine(ReturnToNormal(.06f));
-            //dashwhereplyrmoves(default-forward)
+            velocity = GetComponentInChildren<PlayerLook>().playerBody.forward * dashSpeed;
         }
         else
         {
-            velocity = GetComponentInChildren<PlayerLook>().playerBody.forward * 200;
-            StartCoroutine(ReturnToNormal(.06f));
-            //dashwhereyoulookinat
+            velocity = moveDirection * 200;
         }
-        //bla bla bla
+        StartCoroutine(ReturnToNormal(.06f));
+        //dashwhereplyrmoves(default-forward)
     }
-
     IEnumerator ReturnToNormal(float secondsRemaining)
     {
         
