@@ -30,6 +30,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float heightLerpSpeed = 20f;
     [SerializeField] private Transform cameraRoot;
     [SerializeField] private float slideCooldown = 1.5f;
+    [SerializeField] private float momentumDecayTime = 0.5f;
 
     private CharacterController characterController;
     private Vector3 velocity;
@@ -42,6 +43,9 @@ public class PlayerController : MonoBehaviour
     private Vector3 slideDirection;
     private float originalHeight;
     private Vector3 originalCameraLocalPos;
+    private bool hasMomentum;
+    private Vector3 momentumVelocity;
+    private float momentumTimer;
 
     private void Awake()
     {
@@ -96,6 +100,15 @@ public class PlayerController : MonoBehaviour
         }
         
         if (slideCooldownCounter > 0) slideCooldownCounter -= Time.deltaTime;
+
+        if (hasMomentum && momentumTimer > 0)
+        {
+            momentumTimer -= Time.deltaTime;
+            if (momentumTimer <= 0)
+            {
+                hasMomentum = false;
+            }
+        }
     }
 
     private void HandleMovement()
@@ -104,8 +117,29 @@ public class PlayerController : MonoBehaviour
 
         Vector2 input = movementAction.action.ReadValue<Vector2>();
         Vector3 moveDirection = transform.right * input.x + transform.forward * input.y;
-        velocity.x = moveDirection.x * movementSpeed;
-        velocity.z = moveDirection.z * movementSpeed;
+        
+        if (hasMomentum && momentumTimer > 0)
+        {
+            if (input.magnitude > 0.1f)
+            {
+                Vector3 newVelocity = moveDirection * movementSpeed;
+                
+                float t = 1f - (momentumTimer / momentumDecayTime);
+                velocity.x = Mathf.Lerp(momentumVelocity.x, newVelocity.x, t);
+                velocity.z = Mathf.Lerp(momentumVelocity.z, newVelocity.z, t);
+            }
+            else
+            {
+                float decayFactor = momentumTimer / momentumDecayTime;
+                velocity.x = momentumVelocity.x * decayFactor;
+                velocity.z = momentumVelocity.z * decayFactor;
+            }
+        }
+        else
+        {
+            velocity.x = moveDirection.x * movementSpeed;
+            velocity.z = moveDirection.z * movementSpeed;
+        }
     }
 
     private void OnJumpPerformed(InputAction.CallbackContext context)
@@ -126,6 +160,9 @@ public class PlayerController : MonoBehaviour
             velocity.y = jumpForce;
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
+            
+            hasMomentum = false;
+            momentumTimer = 0f;
         }
     }
 
@@ -161,6 +198,9 @@ public class PlayerController : MonoBehaviour
 
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
         slideDirection = currentHorizontalVelocity.normalized;
+        
+        hasMomentum = false;
+        momentumTimer = 0f;
     }
 
     private void UpdateSlide()
@@ -185,6 +225,10 @@ public class PlayerController : MonoBehaviour
     private void EndSlide()
     {
         isSliding = false;
+        
+        momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        hasMomentum = true;
+        momentumTimer = momentumDecayTime;
     }
 
     private void LerpHeightAndCameraBack()

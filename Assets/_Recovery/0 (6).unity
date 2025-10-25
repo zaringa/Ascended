@@ -1470,10 +1470,13 @@ MonoBehaviour:
   coyoteTime: 0.1
   gravity: -9.81
   slideDuration: 0.3
-  slideSpeedMultiplier: 1.5
+  slideSpeed: 15
+  slideFriction: 7.35
   slideHeight: 1
-  cameraLowerOffset: 0.5
-  mainCamera: {fileID: 1780516146}
+  cameraSlideOffset: -0.1
+  heightLerpSpeed: 20
+  cameraRoot: {fileID: 0}
+  slideCooldown: 1.5
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0
