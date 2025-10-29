@@ -73,7 +73,7 @@ public abstract class BaseWeapon : MonoBehaviour
         {
             if (gunInfo.projectilePrefab == null)
             {
-                Debug.LogWarning($"[{gunInfo.gunName}] Не задан префаб снаряда для огнестрельного оружия!");
+                Debug.LogWarning($"[{gunInfo.name}] Не задан префаб снаряда для огнестрельного оружия!");
             }
         }
     }
@@ -103,7 +103,7 @@ public abstract class BaseWeapon : MonoBehaviour
         // Если обойма уже полная
         if (currentMagazineAmmo == gunInfo.maxMagazineCapacity)
         {
-            Debug.Log($"[{gunInfo.gunName}] Обойма уже полная!");
+            Debug.Log($"[{gunInfo.name}] Обойма уже полная!");
             return;
         }
 
@@ -114,7 +114,7 @@ public abstract class BaseWeapon : MonoBehaviour
     {
         isReloading = true;
         OnReloadStarted?.Invoke();
-        Debug.Log($"Начало перезарядки {gunInfo.gunName}...");
+        Debug.Log($"Начало перезарядки {gunInfo.name}...");
 
         // Воспроизведение звука перезарядки
         PlaySound(gunInfo.reloadSound);

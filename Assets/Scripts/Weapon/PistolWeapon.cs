@@ -16,7 +16,7 @@ public class PistolWeapon : BaseWeapon
         // Если точка выстрела не задана, используем позицию оружия
         if (firePoint == null)
         {
-            Debug.LogWarning($"[{gunInfo.gunName}] Fire Point не назначен, используется позиция оружия");
+            Debug.LogWarning($"[{gunInfo.name}] Fire Point не назначен, используется позиция оружия");
             firePoint = transform;
         }
 
@@ -40,14 +40,14 @@ public class PistolWeapon : BaseWeapon
         }
         else
         {
-            Debug.Log($"[{gunInfo.gunName}] Патроны закончились! Нужна перезарядка.");
+            Debug.Log($"[{gunInfo.name}] Патроны закончились! Нужна перезарядка.");
             return false;
         }
     }
 
     private void Fire()
     {
-        Debug.Log($"[{gunInfo.gunName}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
+        Debug.Log($"[{gunInfo.name}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
         InvokeWeaponFired();
         // PlaySound(gunInfo.fireSound); - временный мут чтобы воспроизводить очередь
         PlayMuzzleFlash();
@@ -60,7 +60,7 @@ public class PistolWeapon : BaseWeapon
     {
         if (gunInfo.projectilePrefab == null)
         {
-            Debug.LogError($"[{gunInfo.gunName}] Префаб снаряда не назначен!");
+            Debug.LogError($"[{gunInfo.name}] Префаб снаряда не назначен!");
             return;
         }
 
@@ -85,7 +85,7 @@ public class PistolWeapon : BaseWeapon
         }
         else
         {
-            Debug.LogError($"[{gunInfo.gunName}] У префаба снаряда нет компонента Projectile!");
+            Debug.LogError($"[{gunInfo.name}] У префаба снаряда нет компонента Projectile!");
             Destroy(projectileObj);
         }
     }
