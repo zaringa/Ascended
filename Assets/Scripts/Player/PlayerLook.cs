@@ -9,18 +9,23 @@ public class PlayerLook : MonoBehaviour
 {
     [Header("Input")]
     [SerializeField] private InputActionReference lookAction;
+    [SerializeField] private InputActionReference useAction;
+
 
     [Header("Settings")]
     [SerializeField] private float sensitivity = 2f;
     [SerializeField] private bool invertY = false;
     [SerializeField] private float minVerticalAngle = -90f;
     [SerializeField] private float maxVerticalAngle = 90f;
+    [SerializeField] private float maxInteractionLength = 2.6f;
+
 
     [Header("References")]
      public Transform playerBody;
 
     private float verticalRotation = 0f;
     private bool isFirstFrame = true;
+    [HideInInspector] public GameObject lookedAtActor;
     private Vector2 lookAxis;
 
     void Start()
@@ -47,11 +52,20 @@ public class PlayerLook : MonoBehaviour
     void OnEnable()
     {
         lookAction?.action.Enable();
+        useAction?.action.Enable();
+        useAction.action.performed += UseAction;
     }
 
     void OnDisable()
     {
         lookAction?.action.Disable();
+    }
+    void UseAction(InputAction.CallbackContext context)
+    {
+        if(lookedAtActor !=null)
+        {
+            lookedAtActor.BroadcastMessage("Execute");
+        }
     }
 
     void Update()
@@ -82,5 +96,17 @@ public class PlayerLook : MonoBehaviour
         verticalRotation = Mathf.Clamp(verticalRotation, minVerticalAngle, maxVerticalAngle);
 
         transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
+
+        RaycastHit hit;
+        Debug.DrawRay(transform.position, transform.forward*maxInteractionLength);
+        if (Physics.Raycast(transform.position, transform.forward, out hit, maxInteractionLength, 3))
+        {
+            Debug.Log("Hited something");
+            lookedAtActor = hit.transform.gameObject;
+        }
+        else
+        {
+            lookedAtActor = null;
+        }
     }
 }
