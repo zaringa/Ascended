@@ -1463,6 +1463,7 @@ MonoBehaviour:
   movementAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   dashAction: {fileID: -6192597183114217218, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   jumpAction: {fileID: -6000595813187283402, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  slideAction: {fileID: 4921178424287575937, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   movementSpeed: 5
   allowJump: 1
   jumpHeight: 2
@@ -1477,6 +1478,11 @@ MonoBehaviour:
   wallJumpCooldownTime: 0.15
   airControlDuringWallJump: 0.95
   gravity: -9.81
+  slideDuration: 0.3
+  slideSpeedMultiplier: 1.5
+  slideHeight: 1
+  cameraLowerOffset: 0.5
+  mainCamera: {fileID: 1780516146}
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0
