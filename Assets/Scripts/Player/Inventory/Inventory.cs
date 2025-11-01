@@ -17,6 +17,6 @@ public class Inventory : MonoBehaviour
     [SerializeField] public GunInfo secondaryWeapon;
 
     [Header("Расходники")]
-    [SerializeField] public Consumable[] craftedConsumables = new Consumable[3];
-    [SerializeField] public List<(Consumable, int)> consumables;
+    [SerializeField] public IConsumable[] craftedConsumables = new IConsumable[3];
+    [SerializeField] public List<(IConsumable, int)> consumables;
 }

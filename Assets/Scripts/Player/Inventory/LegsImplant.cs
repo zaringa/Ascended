@@ -1,4 +1,6 @@
-﻿/// <summary> Имплант первого слоя под ноги </summary>
+﻿using UnityEngine;
+
+/// <summary> Имплант первого слоя под ноги </summary>
 //[CreateAssetMenu(fileName = "New legs implant", menuName = "Items/Implants/Legs")]
 public abstract class LegsImplant : Implant
 {

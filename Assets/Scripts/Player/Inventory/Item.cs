@@ -3,8 +3,8 @@
 /// <summary> Любой отображаемый в UI предмет </summary>
 public abstract class Item : ScriptableObject
 {
-    /// <summary> Наименование предмета </summary>
     [Header("Основные характеристики")]
+    /// <summary> Наименование предмета </summary>
     public new string name;
 
     /// <summary> Спрайт предмета </summary>

@@ -3,7 +3,7 @@
 /// <summary> Предмет с 3D моделью </summary>
 public abstract class RenderableItem : Item
 {
-    /// <summary> 3D модель предмета </summary>
     [Header("Визуализация")]
+    /// <summary> 3D модель предмета </summary>
     public GameObject prefab;
 }
