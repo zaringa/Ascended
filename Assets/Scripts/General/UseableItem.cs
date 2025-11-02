@@ -1,6 +1,10 @@
 using UnityEngine;
+public interface IUseable
+{
+   void Execute ();
+}
 
-public class UseableItem : MonoBehaviour
+public class UseableItem : MonoBehaviour, IUseable
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

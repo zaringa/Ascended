@@ -25,7 +25,7 @@ public class PlayerLook : MonoBehaviour
 
     private float verticalRotation = 0f;
     private bool isFirstFrame = true;
-    [HideInInspector] public GameObject lookedAtActor;
+    [HideInInspector] public IUseable lookedAtActor;
     private Vector2 lookAxis;
 
     void Start()
@@ -64,7 +64,7 @@ public class PlayerLook : MonoBehaviour
     {
         if(lookedAtActor !=null)
         {
-            lookedAtActor.BroadcastMessage("Execute");
+            lookedAtActor.Execute();
         }
     }
 
@@ -101,8 +101,15 @@ public class PlayerLook : MonoBehaviour
         Debug.DrawRay(transform.position, transform.forward*maxInteractionLength);
         if (Physics.Raycast(transform.position, transform.forward, out hit, maxInteractionLength, 3))
         {
-            Debug.Log("Hited something");
-            lookedAtActor = hit.transform.gameObject;
+            if (hit.transform is IUseable)
+            {
+                Debug.Log("Hited something");
+                lookedAtActor = hit.transform as IUseable;
+            }
+            else
+            {
+            lookedAtActor = null;
+            }
         }
         else
         {
