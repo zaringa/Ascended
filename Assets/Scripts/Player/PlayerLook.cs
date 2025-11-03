@@ -25,7 +25,6 @@ public class PlayerLook : MonoBehaviour
 
     private float verticalRotation = 0f;
     private bool isFirstFrame = true;
-    [HideInInspector] public IUseable lookedAtActor;
     private Vector2 lookAxis;
 
     void Start()
@@ -62,9 +61,20 @@ public class PlayerLook : MonoBehaviour
     }
     void UseAction(InputAction.CallbackContext context)
     {
-        if(lookedAtActor !=null)
+        RaycastHit hit;
+        Debug.DrawRay(transform.position, transform.forward*maxInteractionLength);
+        if (Physics.Raycast(transform.position, transform.forward, out hit, maxInteractionLength, 3))
         {
-            lookedAtActor.Execute();
+            if (hit.transform.gameObject.TryGetComponent(out IUseable useableObj))
+            {
+                useableObj.Execute();
+            }
+            else
+            {
+                Debug.LogError($"{hit.transform.name} не имеет интерфейса IUseable");
+                
+            }
+
         }
     }
 
@@ -97,23 +107,5 @@ public class PlayerLook : MonoBehaviour
 
         transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
 
-        RaycastHit hit;
-        Debug.DrawRay(transform.position, transform.forward*maxInteractionLength);
-        if (Physics.Raycast(transform.position, transform.forward, out hit, maxInteractionLength, 3))
-        {
-            if (hit.transform is IUseable)
-            {
-                Debug.Log("Hited something");
-                lookedAtActor = hit.transform as IUseable;
-            }
-            else
-            {
-            lookedAtActor = null;
-            }
-        }
-        else
-        {
-            lookedAtActor = null;
-        }
     }
 }

@@ -1,7 +1,7 @@
 using UnityEngine;
 public interface IUseable
 {
-   void Execute ();
+   void Execute();
 }
 
 public class UseableItem : MonoBehaviour, IUseable
