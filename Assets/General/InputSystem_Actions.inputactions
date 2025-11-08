@@ -34,9 +34,9 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Dash",
+                    "name": "Slide",
                     "type": "Button",
-                    "id": "34ab0747-5a0a-404b-ac3e-ec6d32e045be",
+                    "id": "6c65898f-7714-40bb-8f0d-af6dedc50857",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -187,12 +187,12 @@
                 },
                 {
                     "name": "",
-                    "id": "c6d8d88b-cc21-4616-8de9-f00369487504",
-                    "path": "<Keyboard>/leftShift",
+                    "id": "e126bb13-0025-42d6-bb82-a65a3793e9a4",
+                    "path": "<Keyboard>/c",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
-                    "action": "Dash",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Slide",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
