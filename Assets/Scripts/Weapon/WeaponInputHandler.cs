@@ -45,7 +45,28 @@ public class WeaponInputHandler : MonoBehaviour
 
         if (useMouseButton)
         {
-            if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
+            if (weapon is SemiAutoRifle)
+            {
+                if (mouse.leftButton.wasPressedThisFrame)
+                {
+                    weapon.TryToFire();
+                }
+            }
+            else if (weapon is DoubleBarrelShotgun)
+            {
+                if (mouse.leftButton.wasPressedThisFrame)
+                {
+                    weapon.TryToFire();
+                }
+            }
+            else if (weapon is Katana)
+            {
+                if (mouse.leftButton.wasPressedThisFrame)
+                {
+                    weapon.TryToFire();
+                }
+            }
+            else if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
             {
                 if (mouse.leftButton.isPressed) // ЛКМ удержание
                 {
