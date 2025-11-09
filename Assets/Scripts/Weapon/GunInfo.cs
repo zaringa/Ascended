@@ -1,3 +1,4 @@
+using Player.Items;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "NewGunInfo", menuName = "Game/Gun Info")]
