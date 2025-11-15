@@ -988,7 +988,7 @@ GameObject:
   - component: {fileID: 1358085933}
   m_Layer: 0
   m_Name: Cube (3)
-  m_TagString: Wall
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1080,7 +1080,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 3.0278997, y: 2.01, z: -7.7684402}
-  m_LocalScale: {x: 2, y: 3.55, z: 4.23}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1833263588}
@@ -1441,7 +1441,7 @@ Transform:
   m_GameObject: {fileID: 1633871632}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.78, y: 27.86, z: -7.47889}
+  m_LocalPosition: {x: -4.78, y: 0.94, z: -7.47889}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1461,28 +1461,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
   movementAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  dashAction: {fileID: -6192597183114217218, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   jumpAction: {fileID: -6000595813187283402, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   slideAction: {fileID: 4921178424287575937, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   movementSpeed: 5
   allowJump: 1
   jumpHeight: 2
-  jumpBufferTime: 0.25
-  coyoteTime: 0.075
-  wallCheckDistance: 0.3
-  wallTag: Wall
-  wallSlideSpeed: -1
-  wallJumpHeight: 2
-  wallJumpForce: 10
-  momentumDecay: 10
-  wallJumpCooldownTime: 0.15
-  airControlDuringWallJump: 0.95
+  jumpBufferTime: 0.1
+  coyoteTime: 0.1
   gravity: -9.81
   slideDuration: 0.3
-  slideSpeedMultiplier: 1.5
+  slideSpeed: 15
+  slideFriction: 7.35
   slideHeight: 1
-  cameraLowerOffset: 0.5
-  mainCamera: {fileID: 1780516146}
+  cameraSlideOffset: -0.1
+  heightLerpSpeed: 20
+  cameraRoot: {fileID: 1780516143}
+  slideCooldown: 1.5
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0

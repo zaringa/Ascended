@@ -988,7 +988,7 @@ GameObject:
   - component: {fileID: 1358085933}
   m_Layer: 0
   m_Name: Cube (3)
-  m_TagString: Wall
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1080,7 +1080,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 3.0278997, y: 2.01, z: -7.7684402}
-  m_LocalScale: {x: 2, y: 3.55, z: 4.23}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1833263588}
@@ -1441,7 +1441,7 @@ Transform:
   m_GameObject: {fileID: 1633871632}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -4.78, y: 27.86, z: -7.47889}
+  m_LocalPosition: {x: -4.78, y: 0.94, z: -7.47889}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1460,29 +1460,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b0db8c9590169c84f96ec60f96ed3746, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
-  movementAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  dashAction: {fileID: -6192597183114217218, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  jumpAction: {fileID: -6000595813187283402, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  slideAction: {fileID: 4921178424287575937, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  movementSpeed: 5
-  allowJump: 1
-  jumpHeight: 2
-  jumpBufferTime: 0.25
-  coyoteTime: 0.075
-  wallCheckDistance: 0.3
-  wallTag: Wall
-  wallSlideSpeed: -1
-  wallJumpHeight: 2
-  wallJumpForce: 10
-  momentumDecay: 10
-  wallJumpCooldownTime: 0.15
-  airControlDuringWallJump: 0.95
-  gravity: -9.81
-  slideDuration: 0.3
-  slideSpeedMultiplier: 1.5
-  slideHeight: 1
-  cameraLowerOffset: 0.5
-  mainCamera: {fileID: 1780516146}
+  _movementAction: {fileID: 0}
+  _jumpAction: {fileID: 0}
+  _slideAction: {fileID: 0}
+  _movementSpeed: 5
+  _allowJump: 1
+  _jumpHeight: 2
+  _jumpBufferTime: 0.1
+  _coyoteTime: 0.1
+  _gravity: -9.81
+  _slideDuration: 0.8
+  _slideSpeed: 10
+  _slideFriction: 5
+  _slideHeight: 0.9
+  _cameraSlideOffset: -0.4
+  _heightLerpSpeed: 10
+  _cameraRoot: {fileID: 0}
 --- !u!1 &1744042329
 GameObject:
   m_ObjectHideFlags: 0
