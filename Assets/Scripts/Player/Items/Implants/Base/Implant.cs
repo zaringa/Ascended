@@ -1,4 +1,6 @@
-﻿namespace Player.Items.Implants
+﻿using Player.Items.Implants.Interfaces;
+
+namespace Player.Items.Implants.Base
 {
     public abstract class Implant : Item, IImplantable
     {

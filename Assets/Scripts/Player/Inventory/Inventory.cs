@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using Player.Items;
 using Player.Items.Implants;
+using Player.Items.Implants.Base;
 using UnityEngine;
 
 namespace Player.Inventory
