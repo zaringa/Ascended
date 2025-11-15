@@ -1,6 +1,4 @@
-using UnityEngine;
-
-namespace Player.Items.Implants
+namespace Player.Items.Implants.Interfaces
 {
     public interface IImplantable
     {
