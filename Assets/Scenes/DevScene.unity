@@ -1129,6 +1129,53 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1833263588}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1099522770
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1099522772}
+  - component: {fileID: 1099522771}
+  m_Layer: 0
+  m_Name: Syringe
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1099522771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1099522770}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1478c05fcfca5ff4da84d4ba18832081, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Syringe
+  _name: Syringe
+  craftTime: 4.5
+  deltaAdd: 15
+--- !u!4 &1099522772
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1099522770}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.25567865, y: -25.943798, z: -17.095734}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1633871638}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1300372151
 GameObject:
   m_ObjectHideFlags: 0
@@ -1829,6 +1876,7 @@ Transform:
   - {fileID: 1620118467}
   - {fileID: 2111365923}
   - {fileID: 55017698}
+  - {fileID: 1099522772}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1633871641
@@ -1890,7 +1938,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CraftSystem
   isActive: 0
   AvailibleCrafts:
-  - {fileID: 11400000, guid: a6f9b9cac33b714478c929171b7b3fb8, type: 2}
+  - {fileID: 1099522771}
   bufferItem: {fileID: 0}
   text_UI: {fileID: 2048503578}
 --- !u!1 &1744042329

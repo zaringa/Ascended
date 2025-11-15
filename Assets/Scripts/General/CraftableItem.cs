@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public abstract class CraftableItem : ScriptableObject
+public abstract class CraftableItem : MonoBehaviour
 {
     public IItem ResultItem;
     public bool isReadyToUse {get; set;}
@@ -12,16 +12,4 @@ public abstract class CraftableItem : ScriptableObject
 
     }
     
-}
-[CreateAssetMenu(fileName = "NewSyringe", menuName = "Items/Syringe")]
-public class Syringe : CraftableItem 
-{
-    public string _name = "Syringe";
-    public float craftTime = 4.5f;
-    public float deltaAdd = 15F;
-    public override void OnUse()
-    {
-        base.OnUse();
-        Debug.Log("HEALED "+ deltaAdd+ " HEALTH");
-    }
 }
