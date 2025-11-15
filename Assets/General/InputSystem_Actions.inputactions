@@ -34,9 +34,63 @@
                     "initialStateCheck": true
                 },
                 {
+                    "name": "Slide",
+                    "type": "Button",
+                    "id": "6c65898f-7714-40bb-8f0d-af6dedc50857",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Use",
+                    "type": "Button",
+                    "id": "fd6d0eb4-7179-4268-904c-a9703b72345e",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Dash",
                     "type": "Button",
-                    "id": "34ab0747-5a0a-404b-ac3e-ec6d32e045be",
+                    "id": "e7d24e53-4891-4f6b-a078-52a59a6572b3",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Craft",
+                    "type": "Button",
+                    "id": "bddc5275-6d4e-4c9e-ba01-ca712561c486",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Choice1",
+                    "type": "Button",
+                    "id": "0a2ac8ae-610b-409f-a3e1-8c094ec7e127",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Choice2",
+                    "type": "Button",
+                    "id": "165a1a30-9832-4a2f-9ca2-970146fcd470",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Choice3",
+                    "type": "Button",
+                    "id": "33ec69f2-0efc-4de7-87b8-974970774f7d",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -178,12 +232,78 @@
                 },
                 {
                     "name": "",
-                    "id": "c6d8d88b-cc21-4616-8de9-f00369487504",
+                    "id": "e126bb13-0025-42d6-bb82-a65a3793e9a4",
+                    "path": "<Keyboard>/c",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "Slide",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "72dbe909-9562-4011-9e0c-886a2f08e72e",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Use",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "94930bac-a092-4993-8133-be7f862aeeb2",
                     "path": "<Keyboard>/leftShift",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
                     "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e6fde962-cf2b-43b6-a5ce-86b1470585b6",
+                    "path": "<Keyboard>/z",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Craft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8014a72b-acf0-44ab-9a6e-c2853e76f58b",
+                    "path": "<Keyboard>/1",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Choice1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "33ab3b16-67c7-4ba6-a419-300929fe5194",
+                    "path": "<Keyboard>/2",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Choice2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b12e72ff-2299-4629-b05d-762475465ed3",
+                    "path": "<Keyboard>/3",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Choice3",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
