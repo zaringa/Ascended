@@ -9,16 +9,12 @@ public class PlayerLook : MonoBehaviour
 {
     [Header("Input")]
     [SerializeField] private InputActionReference lookAction;
-    [SerializeField] private InputActionReference useAction;
-
 
     [Header("Settings")]
     [SerializeField] private float sensitivity = 2f;
     [SerializeField] private bool invertY = false;
     [SerializeField] private float minVerticalAngle = -90f;
     [SerializeField] private float maxVerticalAngle = 90f;
-    [SerializeField] private float maxInteractionLength = 2.6f;
-
 
     [Header("References")]
      public Transform playerBody;
@@ -51,31 +47,11 @@ public class PlayerLook : MonoBehaviour
     void OnEnable()
     {
         lookAction?.action.Enable();
-        useAction?.action.Enable();
-        useAction.action.performed += UseAction;
     }
 
     void OnDisable()
     {
         lookAction?.action.Disable();
-    }
-    void UseAction(InputAction.CallbackContext context)
-    {
-        RaycastHit hit;
-        Debug.DrawRay(transform.position, transform.forward*maxInteractionLength);
-        if (Physics.Raycast(transform.position, transform.forward, out hit, maxInteractionLength, 3))
-        {
-            if (hit.transform.gameObject.TryGetComponent(out IUseable useableObj))
-            {
-                useableObj.Execute();
-            }
-            else
-            {
-                Debug.LogError($"{hit.transform.name} не имеет интерфейса IUseable");
-                
-            }
-
-        }
     }
 
     void Update()
@@ -106,6 +82,5 @@ public class PlayerLook : MonoBehaviour
         verticalRotation = Mathf.Clamp(verticalRotation, minVerticalAngle, maxVerticalAngle);
 
         transform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
-
     }
 }
