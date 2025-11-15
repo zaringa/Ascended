@@ -127,6 +127,60 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Use"",
+                    ""type"": ""Button"",
+                    ""id"": ""fd6d0eb4-7179-4268-904c-a9703b72345e"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Dash"",
+                    ""type"": ""Button"",
+                    ""id"": ""e7d24e53-4891-4f6b-a078-52a59a6572b3"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Craft"",
+                    ""type"": ""Button"",
+                    ""id"": ""bddc5275-6d4e-4c9e-ba01-ca712561c486"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Choice1"",
+                    ""type"": ""Button"",
+                    ""id"": ""0a2ac8ae-610b-409f-a3e1-8c094ec7e127"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Choice2"",
+                    ""type"": ""Button"",
+                    ""id"": ""165a1a30-9832-4a2f-9ca2-970146fcd470"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Choice3"",
+                    ""type"": ""Button"",
+                    ""id"": ""33ec69f2-0efc-4de7-87b8-974970774f7d"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -272,6 +326,72 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""action"": ""Slide"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""72dbe909-9562-4011-9e0c-886a2f08e72e"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Use"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""94930bac-a092-4993-8133-be7f862aeeb2"",
+                    ""path"": ""<Keyboard>/leftShift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Dash"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e6fde962-cf2b-43b6-a5ce-86b1470585b6"",
+                    ""path"": ""<Keyboard>/z"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Craft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8014a72b-acf0-44ab-9a6e-c2853e76f58b"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Choice1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""33ab3b16-67c7-4ba6-a419-300929fe5194"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Choice2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b12e72ff-2299-4629-b05d-762475465ed3"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Choice3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -345,6 +465,12 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         m_Player_Jump = m_Player.FindAction("Jump", throwIfNotFound: true);
         m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
         m_Player_Slide = m_Player.FindAction("Slide", throwIfNotFound: true);
+        m_Player_Use = m_Player.FindAction("Use", throwIfNotFound: true);
+        m_Player_Dash = m_Player.FindAction("Dash", throwIfNotFound: true);
+        m_Player_Craft = m_Player.FindAction("Craft", throwIfNotFound: true);
+        m_Player_Choice1 = m_Player.FindAction("Choice1", throwIfNotFound: true);
+        m_Player_Choice2 = m_Player.FindAction("Choice2", throwIfNotFound: true);
+        m_Player_Choice3 = m_Player.FindAction("Choice3", throwIfNotFound: true);
     }
 
     ~@InputSystem_Actions()
@@ -429,6 +555,12 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Jump;
     private readonly InputAction m_Player_Look;
     private readonly InputAction m_Player_Slide;
+    private readonly InputAction m_Player_Use;
+    private readonly InputAction m_Player_Dash;
+    private readonly InputAction m_Player_Craft;
+    private readonly InputAction m_Player_Choice1;
+    private readonly InputAction m_Player_Choice2;
+    private readonly InputAction m_Player_Choice3;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -456,6 +588,30 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Slide".
         /// </summary>
         public InputAction @Slide => m_Wrapper.m_Player_Slide;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Use".
+        /// </summary>
+        public InputAction @Use => m_Wrapper.m_Player_Use;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Dash".
+        /// </summary>
+        public InputAction @Dash => m_Wrapper.m_Player_Dash;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Craft".
+        /// </summary>
+        public InputAction @Craft => m_Wrapper.m_Player_Craft;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Choice1".
+        /// </summary>
+        public InputAction @Choice1 => m_Wrapper.m_Player_Choice1;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Choice2".
+        /// </summary>
+        public InputAction @Choice2 => m_Wrapper.m_Player_Choice2;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Choice3".
+        /// </summary>
+        public InputAction @Choice3 => m_Wrapper.m_Player_Choice3;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -494,6 +650,24 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Slide.started += instance.OnSlide;
             @Slide.performed += instance.OnSlide;
             @Slide.canceled += instance.OnSlide;
+            @Use.started += instance.OnUse;
+            @Use.performed += instance.OnUse;
+            @Use.canceled += instance.OnUse;
+            @Dash.started += instance.OnDash;
+            @Dash.performed += instance.OnDash;
+            @Dash.canceled += instance.OnDash;
+            @Craft.started += instance.OnCraft;
+            @Craft.performed += instance.OnCraft;
+            @Craft.canceled += instance.OnCraft;
+            @Choice1.started += instance.OnChoice1;
+            @Choice1.performed += instance.OnChoice1;
+            @Choice1.canceled += instance.OnChoice1;
+            @Choice2.started += instance.OnChoice2;
+            @Choice2.performed += instance.OnChoice2;
+            @Choice2.canceled += instance.OnChoice2;
+            @Choice3.started += instance.OnChoice3;
+            @Choice3.performed += instance.OnChoice3;
+            @Choice3.canceled += instance.OnChoice3;
         }
 
         /// <summary>
@@ -517,6 +691,24 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
             @Slide.started -= instance.OnSlide;
             @Slide.performed -= instance.OnSlide;
             @Slide.canceled -= instance.OnSlide;
+            @Use.started -= instance.OnUse;
+            @Use.performed -= instance.OnUse;
+            @Use.canceled -= instance.OnUse;
+            @Dash.started -= instance.OnDash;
+            @Dash.performed -= instance.OnDash;
+            @Dash.canceled -= instance.OnDash;
+            @Craft.started -= instance.OnCraft;
+            @Craft.performed -= instance.OnCraft;
+            @Craft.canceled -= instance.OnCraft;
+            @Choice1.started -= instance.OnChoice1;
+            @Choice1.performed -= instance.OnChoice1;
+            @Choice1.canceled -= instance.OnChoice1;
+            @Choice2.started -= instance.OnChoice2;
+            @Choice2.performed -= instance.OnChoice2;
+            @Choice2.canceled -= instance.OnChoice2;
+            @Choice3.started -= instance.OnChoice3;
+            @Choice3.performed -= instance.OnChoice3;
+            @Choice3.canceled -= instance.OnChoice3;
         }
 
         /// <summary>
@@ -650,5 +842,47 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSlide(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Use" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnUse(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Dash" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnDash(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Craft" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCraft(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Choice1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnChoice1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Choice2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnChoice2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Choice3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnChoice3(InputAction.CallbackContext context);
     }
 }

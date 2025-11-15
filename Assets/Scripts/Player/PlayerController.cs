@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections.Generic;
+using Assets.Scripts;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
@@ -8,6 +11,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InputActionReference movementAction;
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private InputActionReference slideAction;
+    [SerializeField] private InputActionReference dashAction;
+    [SerializeField] private InputActionReference craftAction;
+    [SerializeField] private InputActionReference choice1Action;
+    [SerializeField] private InputActionReference choice2Action;
+    [SerializeField] private InputActionReference choice3Action;
 
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
@@ -23,6 +31,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Slide Settings")]
     [SerializeField] private float slideDuration = 0.3f;
+
     [SerializeField] private float slideSpeed = 15f;
     [SerializeField] private float slideFriction = 7.35f;
     [SerializeField] private float slideHeight = 1f;
@@ -31,21 +40,39 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform cameraRoot;
     [SerializeField] private float slideCooldown = 1.5f;
     [SerializeField] private float momentumDecayTime = 0.5f;
+    [Header("Dash")]
+    [SerializeField] private float dashDuration = 0.06f;
+    [SerializeField] private float dashSpeed = 200F;
+    [SerializeField] private float dashCooldown = 1.5f;
 
+
+    [Header("Implants")]
+    [SerializeField] private List<BenzoImplantBase> InstalledImplantList;
     private CharacterController characterController;
     private Vector3 velocity;
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
     private float slideCooldownCounter;
+    private float dashCooldownCounter;
+
     private bool wasGroundedLastFrame;
+    [SerializeField] private bool isDashing = false;
+
+    private float dashTimer;
+    private Vector3 bufferDashVelocity;
     private bool isSliding;
+
     private float slideTimer;
     private Vector3 slideDirection;
     private float originalHeight;
     private Vector3 originalCameraLocalPos;
     private bool hasMomentum;
     private Vector3 momentumVelocity;
-    private float momentumTimer;
+    [SerializeField] private float momentumTimer;
+    [Header("System")]
+    [HideInInspector] public bool IsCraftOpen; 
+    [SerializeField] private CraftSystem CraftSystemReference;
+    
 
     private void Awake()
     {
@@ -55,6 +82,8 @@ public class PlayerController : MonoBehaviour
         {
             originalCameraLocalPos = cameraRoot.localPosition;
         }
+        foreach (BenzoImplantBase c in InstalledImplantList)
+            c.IsEquiped = true;
     }
 
     private void OnEnable()
@@ -62,8 +91,20 @@ public class PlayerController : MonoBehaviour
         movementAction?.action.Enable();
         jumpAction?.action.Enable();
         slideAction?.action.Enable();
+        dashAction?.action.Enable();
+        craftAction?.action.Enable();
+        choice1Action?.action.Enable();
+        choice2Action?.action.Enable();
+        choice3Action?.action.Enable();
         jumpAction.action.performed += OnJumpPerformed;
         slideAction.action.performed += OnSlidePerformed;
+        dashAction.action.performed += OnDashPerformed;
+        craftAction.action.performed += OnCraftPerformed;
+        choice1Action.action.performed += OnNumpadPressed1;
+        choice2Action.action.performed += OnNumpadPressed2;
+        choice3Action.action.performed += OnNumpadPressed3;
+
+
     }
 
     private void OnDisable()
@@ -71,8 +112,19 @@ public class PlayerController : MonoBehaviour
         movementAction?.action.Disable();
         jumpAction?.action.Disable();
         slideAction?.action.Disable();
+        dashAction?.action.Disable();
+        craftAction?.action.Disable();
+        choice1Action?.action.Disable();
+        choice2Action?.action.Disable();
+        choice3Action?.action.Disable();
         jumpAction.action.performed -= OnJumpPerformed;
         slideAction.action.performed -= OnSlidePerformed;
+        dashAction.action.performed -= OnDashPerformed;
+        craftAction.action.performed -= OnCraftPerformed;
+        choice1Action.action.performed -= OnNumpadPressed1;
+        choice2Action.action.performed -= OnNumpadPressed2;
+        choice3Action.action.performed -= OnNumpadPressed3;
+
     }
 
     private void Update()
@@ -81,6 +133,7 @@ public class PlayerController : MonoBehaviour
         HandleMovement();
         HandleJump();
         HandleSlide();
+        HandleDash();
         ApplyGravity();
         characterController.Move(velocity * Time.deltaTime);
         wasGroundedLastFrame = characterController.isGrounded;
@@ -109,8 +162,25 @@ public class PlayerController : MonoBehaviour
                 hasMomentum = false;
             }
         }
+        if(dashCooldownCounter>0)
+            dashCooldownCounter -= Time.deltaTime;
+        
     }
-
+    private void OnNumpadPressed1(InputAction.CallbackContext context)
+    {
+        Debug.Log("Key 1 pressed");
+        CraftSystemReference.TryToCraft(0);
+    }
+    private void OnNumpadPressed2(InputAction.CallbackContext context)
+    {
+        Debug.Log("Key 1 pressed");
+        CraftSystemReference.TryToCraft(1);
+    }
+    private void OnNumpadPressed3(InputAction.CallbackContext context)
+    {
+        Debug.Log("Key 1 pressed");
+        CraftSystemReference.TryToCraft(2);
+    }
     private void HandleMovement()
     {
         if (isSliding) return;
@@ -146,7 +216,20 @@ public class PlayerController : MonoBehaviour
     {
         jumpBufferCounter = jumpBufferTime;
     }
+    private void OnDashPerformed(InputAction.CallbackContext context)
+    {
+        Debug.Log("Begun Dashing!");
 
+        if (!isDashing && dashCooldownCounter <= 0.0f)
+        {
+
+            StartDash();
+        }
+    }
+    private void OnCraftPerformed(InputAction.CallbackContext context)
+    {
+        CraftSystemReference.SwitchActive();
+    }
     private void HandleJump()
     {
         if (!allowJump) return;
@@ -154,13 +237,12 @@ public class PlayerController : MonoBehaviour
         float jumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
 
         bool canJump = characterController.isGrounded || coyoteTimeCounter > 0;
-        
+
         if (jumpBufferCounter > 0 && canJump)
         {
             velocity.y = jumpForce;
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
-            
             hasMomentum = false;
             momentumTimer = 0f;
         }
@@ -177,7 +259,7 @@ public class PlayerController : MonoBehaviour
 
     private void HandleSlide()
     {
-        if (!isSliding) 
+        if (!isSliding)
         {
             LerpHeightAndCameraBack();
             return;
@@ -189,20 +271,86 @@ public class PlayerController : MonoBehaviour
             EndSlide();
         }
     }
+    private void HandleDash()
+    {
+        if(isDashing)
+        {
+            UpdateDash();
+            if(dashTimer<=0)
+            EndDash();
+        }
+    }
+
+    private void UpdateDash()
+    {
+        dashTimer -= Time.deltaTime;
+        if (bufferDashVelocity == Vector3.zero)
+        {
+            velocity = this.transform.forward * dashSpeed;
+        }
+        else
+        {
+            velocity = bufferDashVelocity.normalized * dashSpeed;
+        }
+    }
+
+    private void StartDash()
+    {
+        isDashing = true;
+        dashTimer = dashDuration;
+        slideCooldownCounter = slideCooldown;
+        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        bufferDashVelocity = currentHorizontalVelocity;
+        ActivateImplants(AffectedAction.dash);
+        hasMomentum = false;
+        momentumTimer = 0f;
+        
+    }
+    private void EndDash()
+    {
+        isDashing = false;
+        momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
+
+        DectivateImplants(AffectedAction.dash);
+        velocity = bufferDashVelocity;
+        dashCooldownCounter = dashCooldown;
+    }
 
     private void StartSlide()
     {
         isSliding = true;
         slideTimer = slideDuration;
+
         slideCooldownCounter = slideCooldown;
 
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
         slideDirection = currentHorizontalVelocity.normalized;
-        
+        ActivateImplants(AffectedAction.slide);
         hasMomentum = false;
         momentumTimer = 0f;
     }
+    private void ActivateImplants(AffectedAction aa_)
+    {
+        foreach(BenzoImplantBase im in InstalledImplantList)
+        {
+            if(im.a_action ==  aa_)
+            {
+                Debug.Log("Enabled " + im.name);
+                im.Use(true);
+            }
+        }
+    }
 
+    private void DectivateImplants(AffectedAction aa_)
+    {
+        foreach(BenzoImplantBase im in InstalledImplantList)
+        {
+            if(im.a_action ==  aa_)
+            {
+                im.Use(false);
+            }
+        }
+    }
     private void UpdateSlide()
     {
         slideTimer -= Time.deltaTime;
@@ -225,9 +373,9 @@ public class PlayerController : MonoBehaviour
     private void EndSlide()
     {
         isSliding = false;
-        
         momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
         hasMomentum = true;
+        DectivateImplants(AffectedAction.slide);
         momentumTimer = momentumDecayTime;
     }
 
@@ -250,5 +398,10 @@ public class PlayerController : MonoBehaviour
         {
             velocity.y += gravity * Time.deltaTime;
         }
+    }
+    public void InstallImplant(BenzoImplantBase origImplant)
+    {
+        InstalledImplantList.Add(origImplant);
+        origImplant.IsEquiped = true;
     }
 }
