@@ -2,8 +2,12 @@ using UnityEngine;
 
 public class Syringe : CraftableItem 
 {
-    public string _name = "Syringe";
-    public float craftTime = 4.5f;
+    void Awake()
+    {
+        lename = "Syringe";
+    }
+    public new string lename = "Syringe";
+    public new float craftTime = 4.5f;
     public float deltaAdd = 15F;
     public override void OnUse()
     {

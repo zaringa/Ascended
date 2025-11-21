@@ -17,7 +17,7 @@ public class UseableItem : MonoBehaviour, IUseable
     {
 
     }
-    public void Execute()
+    public virtual void Execute()
     {
         Debug.Log("Haaaaaiii :3");
     }

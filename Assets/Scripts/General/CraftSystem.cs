@@ -10,7 +10,7 @@ public class CraftSystem : MonoBehaviour
 {
     public bool isActive;
     private bool isWorking;
-    public List<CraftableItem> AvailibleCrafts = new List<CraftableItem>();
+    public List<CraftableItem> AvailibleCrafts;
     private float timeRemaining;
     public CraftableItem bufferItem;
     [SerializeField] private TMP_Text text_UI;
@@ -31,7 +31,7 @@ public class CraftSystem : MonoBehaviour
                 int ind = 0;
                 foreach(CraftableItem v in AvailibleCrafts)
                 {
-                    out_naym += (ind+1)+". "+ v._name+"\n";
+                    out_naym += (ind+1)+". "+ v.GetComponent<CraftableItem>().lename+"\n";
                     ind++;
                 }
                 text_UI.text = out_naym;
@@ -44,7 +44,14 @@ public class CraftSystem : MonoBehaviour
             //гарантируем что в начале случайно не используем нескрафтившийся предмет
             if(timeRemaining <=0F)
             {
-                //bufferItem.ResultItem.Execute();
+                try
+                {
+                    bufferItem.ResultItem.Execute();
+                }
+                catch
+                {
+                    Debug.Log("Womp Womp"); 
+                } 
                 bufferItem = null;
                 out_naym = "";
             }
@@ -56,14 +63,14 @@ public class CraftSystem : MonoBehaviour
     {
         if(isActive && CraftbleID <= AvailibleCrafts.Count())
         {
-            Debug.Log("Craft of" + AvailibleCrafts[CraftbleID]._name + " begun");
+            Debug.Log("Craft of" + AvailibleCrafts[CraftbleID].lename + " begun");
             //timeRemaining = AvailibleCrafts[CraftbleID].craftTime;
             timeRemaining = 4.5f;
-            bufferItem = AvailibleCrafts[CraftbleID];
+            bufferItem = AvailibleCrafts[CraftbleID].GetComponent<CraftableItem>();
             AvailibleCrafts.RemoveAt(CraftbleID);
             isActive = false;
             isWorking = true;
-            out_naym = bufferItem._name + "will be ready in "+ timeRemaining;
+            out_naym = bufferItem.lename + "will be ready in "+ timeRemaining;
         }
 
 
@@ -74,14 +81,14 @@ public class CraftSystem : MonoBehaviour
         if(isWorking && timeRemaining>0F)
         {
             timeRemaining -= Time.deltaTime;
-            out_naym = bufferItem._name + " will be ready in "+ timeRemaining;
+            out_naym = bufferItem.lename + " will be ready in "+ timeRemaining;
 
         }
         else
         {
             if(bufferItem != null)
             {
-            out_naym = bufferItem._name + "ready to deploy";
+            out_naym = bufferItem.lename + "ready to deploy";
             }
             isWorking = false;
             timeRemaining = 0F;
