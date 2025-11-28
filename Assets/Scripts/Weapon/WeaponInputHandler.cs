@@ -40,7 +40,7 @@ public class WeaponInputHandler : MonoBehaviour
 
     private void Update()
     {
-        if (weapon == null) return;
+        /*if (weapon == null) return; - Требуется фикс
         if (mouse == null || keyboard == null) return;
 
         if (useMouseButton)
@@ -80,13 +80,13 @@ public class WeaponInputHandler : MonoBehaviour
         if (keyboard[alternativeFireKey].isPressed && alternativeFireKey != Key.R)
         {
             weapon.TryToFire();
-        }
+        }*/
     }
 
     // Отображение информации на экране
-    private void OnGUI()
+    private void OnGUI() // - Требуется фикс
     {
-        if (weapon == null) return;
+        /*if (weapon == null) return;
 
         GUIStyle style = new GUIStyle(GUI.skin.label);
         style.fontSize = 18;
@@ -119,6 +119,6 @@ public class WeaponInputHandler : MonoBehaviour
             style.normal.textColor = Color.white;
         }
         style.fontSize = 14;
-        GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);
+        GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);*/
     }
 }

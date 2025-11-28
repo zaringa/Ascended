@@ -6,33 +6,22 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "NewGunInfo", menuName = "Game/Gun Info")]
 public class GunInfo : RenderableItem
 {
-<<<<<<< HEAD
     [Header("Идентификация")]
     public string gunName = "Default Weapon";
     public Sprite weaponSprite;
     [TextArea(3, 5)]
     public string description = "Standard issue weapon.";
     
-=======
->>>>>>> dev
     // Перечисление для типизации оружия
     public enum WeaponType { Melee, Firearm };
     public WeaponType type = WeaponType.Firearm;
 
-<<<<<<< HEAD
     [Header("Визуализация")]
     public GameObject weaponModelPrefab; // 3D-модель (Префаб)
 
     [Header("Характеристики")]
-=======
-    [Header("Базовые характеристики")]
->>>>>>> dev
     public float damage = 10f;
     public int maxMagazineCapacity = 10;
-<<<<<<< HEAD
-    public float fireRate = 0.1f;
-    public float reloadTime = 2.0f;
-=======
     public float fireRate = 0.1f; // Время между выстрелами
     public float reloadTime = 2.0f; // Время перезарядки
 
@@ -88,5 +77,4 @@ public class GunInfo : RenderableItem
         if (damage <= 0)
             damage = 1f;
     }
->>>>>>> dev
 }

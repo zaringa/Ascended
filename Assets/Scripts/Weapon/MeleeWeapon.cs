@@ -10,7 +10,7 @@ public class MeleeWeapon : BaseWeapon
     [SerializeField] private bool useSphereCast = false; // Альтернативный метод детекции через SphereCast
     [SerializeField] private float sphereCastRadius = 0.5f;
 
-    private HashSet<IDamageable> hitTargets = new HashSet<IDamageable>(); // Чтобы не наносить урон дважды за один удар
+    //private HashSet<IDamageable> hitTargets = new HashSet<IDamageable>(); // Чтобы не наносить урон дважды за один удар
     private bool canDealDamage = false; // Флаг, можно ли наносить урон в данный момент
 
     protected override void Start()
@@ -37,7 +37,7 @@ public class MeleeWeapon : BaseWeapon
     }
     public override bool TryToFire()
     {
-        // Проверка, что оружие не атакует и не перезаряжается
+        /*// Проверка, что оружие не атакует и не перезаряжается
         if (isAttacking || isReloading)
         {
             return false;
@@ -50,12 +50,13 @@ public class MeleeWeapon : BaseWeapon
         }
         StartCoroutine(AttackCoroutine());
         lastFireTime = Time.time;
-        return true;
+        return true;*/
+        return false; // Удалить после фикса
     }
     
     private IEnumerator AttackCoroutine()
     {
-        isAttacking = true;
+        /*isAttacking = true;
         hitTargets.Clear();
         InvokeWeaponAttack();
 
@@ -101,12 +102,14 @@ public class MeleeWeapon : BaseWeapon
         yield return new WaitForSeconds(gunInfo.meleeAttackDuration - attackEndDelay);
 
         isAttacking = false;
-        Debug.Log($"[{gunInfo.name}] Атака завершена. Поражено целей: {hitTargets.Count}");
+        Debug.Log($"[{gunInfo.name}] Атака завершена. Поражено целей: {hitTargets.Count}");*/
+        yield return new WaitForSeconds(1); // Удалить после фикса
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!canDealDamage) return;
+        // Требуется фикс
+        /*if (!canDealDamage) return;
 
         // Проверяем, находится ли объект на нужном слое
         if (gunInfo.meleeHitLayers != (gunInfo.meleeHitLayers | (1 << other.gameObject.layer)))
@@ -132,7 +135,7 @@ public class MeleeWeapon : BaseWeapon
 
             // Можно добавить эффекты попадания
             CreateMeleeHitEffect(hitPoint, hitNormal);
-        }
+        }*/
     }
     
     private void PerformSphereCastAttack()
@@ -145,8 +148,8 @@ public class MeleeWeapon : BaseWeapon
         RaycastHit[] hits = Physics.SphereCastAll(origin, sphereCastRadius, direction, gunInfo.meleeRange, gunInfo.meleeHitLayers);
 
         foreach (RaycastHit hit in hits)
-        {
-            IDamageable damageable = hit.collider.GetComponent<IDamageable>();
+        { // Требуется фикс
+            /*IDamageable damageable = hit.collider.GetComponent<IDamageable>();
             if (damageable != null && !hitTargets.Contains(damageable))
             {
                 damageable.TakeDamage(gunInfo.damage, hit.point, hit.normal);
@@ -156,7 +159,7 @@ public class MeleeWeapon : BaseWeapon
                 CreateMeleeHitEffect(hit.point, hit.normal);
 
                 Debug.Log($"[{gunInfo.name}] SphereCast попадание по {hit.collider.gameObject.name}");
-            }
+            }*/
         }
     }
 

@@ -11,6 +11,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InputActionReference movementAction;
     [SerializeField] private InputActionReference dashAction;
     [SerializeField] private InputActionReference jumpAction;
+    [SerializeField] private InputActionReference slideAction;
 
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
@@ -23,6 +24,17 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpBufferTime = 0.1f;
     [SerializeField] private float coyoteTime = 0.1f;
 
+    [Header("Slide")]
+    [SerializeField] private float slideDuration = 0.3f;
+    [SerializeField] private float slideSpeed = 15f;
+    [SerializeField] private float slideFriction = 7.35f;
+    [SerializeField] private float slideHeight = 1f;
+    [SerializeField] private float cameraSlideOffset = -0.1f;
+    [SerializeField] private float heightLerpSpeed = 20f;
+    [SerializeField] private Transform cameraRoot;
+    [SerializeField] private float slideCooldown = 1.5f;
+    [SerializeField] private float momentumDecayTime = 0.5f;
+
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
 
@@ -30,13 +42,28 @@ public class PlayerController : MonoBehaviour
     private Vector3 velocity;
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
+    private float slideCooldownCounter;
     private bool wasGroundedLastFrame;
     private Vector3 bufferMoveDir;
     private Vector3 moveDirection;
 
+    private bool isSliding;
+    private float slideTimer;
+    private Vector3 slideDirection;
+    private float originalHeight;
+    private Vector3 originalCameraLocalPos;
+    private bool hasMomentum;
+    private Vector3 momentumVelocity;
+    private float momentumTimer;
+
     void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        originalHeight = characterController.height;
+        if (cameraRoot != null)
+        {
+            originalCameraLocalPos = cameraRoot.localPosition;
+        }
     }
 
     void OnEnable()
@@ -46,7 +73,8 @@ public class PlayerController : MonoBehaviour
         jumpAction.action.performed += OnJumpPerformed;
         dashAction?.action.Enable();
         dashAction.action.performed += OnDashPerformed;
-
+        slideAction?.action.Enable();
+        slideAction.action.performed += OnSlidePerformed;
     }
 
     void OnDisable()
@@ -56,8 +84,8 @@ public class PlayerController : MonoBehaviour
         jumpAction.action.performed -= OnJumpPerformed;
         dashAction?.action.Disable();
         dashAction.action.performed -= OnDashPerformed;
-
-
+        slideAction?.action.Disable();
+        slideAction.action.performed -= OnSlidePerformed;
     }
 
     void Update()
@@ -69,6 +97,7 @@ public class PlayerController : MonoBehaviour
             HandleMovement();
         }
         HandleJump();
+        HandleSlide();
         ApplyGravity();
         characterController.Move(velocity * Time.deltaTime);
         wasGroundedLastFrame = characterController.isGrounded;
@@ -86,6 +115,17 @@ public class PlayerController : MonoBehaviour
         {
             coyoteTimeCounter -= Time.deltaTime;
         }
+        
+        if (slideCooldownCounter > 0) slideCooldownCounter -= Time.deltaTime;
+
+        if (hasMomentum && momentumTimer > 0)
+        {
+            momentumTimer -= Time.deltaTime;
+            if (momentumTimer <= 0)
+            {
+                hasMomentum = false;
+            }
+        }
     }
 
     void HandleMovement()
@@ -94,6 +134,29 @@ public class PlayerController : MonoBehaviour
         moveDirection = transform.right * input.x + transform.forward * input.y;
         velocity.x = moveDirection.x * movementSpeed;
         velocity.z = moveDirection.z * movementSpeed;
+
+        if (hasMomentum && momentumTimer > 0)
+        {
+            if (input.magnitude > 0.1f)
+            {
+                Vector3 newVelocity = moveDirection * movementSpeed;
+                
+                float t = 1f - (momentumTimer / momentumDecayTime);
+                velocity.x = Mathf.Lerp(momentumVelocity.x, newVelocity.x, t);
+                velocity.z = Mathf.Lerp(momentumVelocity.z, newVelocity.z, t);
+            }
+            else
+            {
+                float decayFactor = momentumTimer / momentumDecayTime;
+                velocity.x = momentumVelocity.x * decayFactor;
+                velocity.z = momentumVelocity.z * decayFactor;
+            }
+        }
+        else
+        {
+            velocity.x = moveDirection.x * movementSpeed;
+            velocity.z = moveDirection.z * movementSpeed;
+        }
     }
 
     void OnJumpPerformed(InputAction.CallbackContext context)
@@ -103,7 +166,6 @@ public class PlayerController : MonoBehaviour
 
     void OnDashPerformed(InputAction.CallbackContext context)
     {
-        Debug.Log("Attempting to Dash!");
         bufferMoveDir = velocity;
         if (moveDirection == Vector3.zero)
         {
@@ -114,14 +176,12 @@ public class PlayerController : MonoBehaviour
             velocity = moveDirection * 200;
         }
         StartCoroutine(ReturnToNormal(.06f));
-        //dashwhereplyrmoves(default-forward)
     }
     IEnumerator ReturnToNormal(float secondsRemaining)
     {
         
         yield return new WaitForSeconds(secondsRemaining);
         velocity = bufferMoveDir;
-        Debug.Log("Bacc to normal");
 
         bufferMoveDir = Vector3.zero;
     }
@@ -139,6 +199,80 @@ public class PlayerController : MonoBehaviour
             velocity.y = jumpForce;
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
+        }
+    }
+
+    private void OnSlidePerformed(InputAction.CallbackContext context)
+    {
+        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f && slideCooldownCounter <= 0f)
+        {
+            StartSlide();
+        }
+    }
+
+    private void HandleSlide()
+    {
+        if (!isSliding) 
+        {
+            LerpHeightAndCameraBack();
+            return;
+        }
+
+        UpdateSlide();
+        if (slideTimer <= 0)
+        {
+            EndSlide();
+        }
+    }
+
+    private void StartSlide()
+    {
+        isSliding = true;
+        slideTimer = slideDuration;
+        slideCooldownCounter = slideCooldown;
+
+        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        slideDirection = currentHorizontalVelocity.normalized;
+        
+        hasMomentum = false;
+        momentumTimer = 0f;
+    }
+
+    private void UpdateSlide()
+    {
+        slideTimer -= Time.deltaTime;
+
+        float currentSlideSpeed = slideSpeed - (slideFriction * (slideDuration - slideTimer));
+        currentSlideSpeed = Mathf.Max(currentSlideSpeed, movementSpeed);
+
+        velocity.x = slideDirection.x * currentSlideSpeed;
+        velocity.z = slideDirection.z * currentSlideSpeed;
+
+        characterController.height = Mathf.Lerp(characterController.height, slideHeight, heightLerpSpeed * Time.deltaTime);
+
+        if (cameraRoot != null)
+        {
+            Vector3 targetCameraPos = originalCameraLocalPos + new Vector3(0f, cameraSlideOffset, 0f);
+            cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, targetCameraPos, heightLerpSpeed * Time.deltaTime);
+        }
+    }
+
+    private void EndSlide()
+    {
+        isSliding = false;
+        
+        momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        hasMomentum = true;
+        momentumTimer = momentumDecayTime;
+    }
+
+    private void LerpHeightAndCameraBack()
+    {
+        characterController.height = Mathf.Lerp(characterController.height, originalHeight, heightLerpSpeed * Time.deltaTime);
+        if (cameraRoot != null)
+        {
+            cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, originalCameraLocalPos, heightLerpSpeed * Time.deltaTime);
         }
     }
 

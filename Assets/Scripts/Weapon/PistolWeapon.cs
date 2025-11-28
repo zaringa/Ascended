@@ -2,9 +2,6 @@ using UnityEngine;
 
 public class PistolWeapon : BaseWeapon
 {
-<<<<<<< HEAD
-    // Реализация абстрактного метода
-=======
     [Header("Точка вылета снаряда")]
     [SerializeField] private Transform firePoint; // Точка, откуда вылетает снаряд
 
@@ -27,7 +24,6 @@ public class PistolWeapon : BaseWeapon
         {muzzleLight.enabled = false;}
     }
 
->>>>>>> dev
     public override bool TryToFire()
     {
         // Проверка готовности (перезарядка, скорострельность)
@@ -50,31 +46,25 @@ public class PistolWeapon : BaseWeapon
         }
         else
         {
-<<<<<<< HEAD
-            // Патроны закончились
-            return false;
-        }
-    }
-=======
             Debug.Log($"[{gunInfo.name}] Патроны закончились! Нужна перезарядка.");
             return false;
         }
     }
 
-    private void Fire()
+    private void Fire() // Требуется фикс
     {
-        Debug.Log($"[{gunInfo.name}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
+        /*Debug.Log($"[{gunInfo.name}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
         InvokeWeaponFired();
         // PlaySound(gunInfo.fireSound); - временный мут чтобы воспроизводить очередь
         PlayMuzzleFlash();
         if (animator != null)
         {animator.SetTrigger("Fire");}
-        SpawnProjectile();
+        SpawnProjectile();*/
     }
 
-    private void SpawnProjectile()
+    private void SpawnProjectile() // Требуется фикс
     {
-        if (gunInfo.projectilePrefab == null)
+        /*if (gunInfo.projectilePrefab == null)
         {
             Debug.LogError($"[{gunInfo.name}] Префаб снаряда не назначен!");
             return;
@@ -103,7 +93,7 @@ public class PistolWeapon : BaseWeapon
         {
             Debug.LogError($"[{gunInfo.name}] У префаба снаряда нет компонента Projectile!");
             Destroy(projectileObj);
-        }
+        }*/
     }
 
     private void PlayMuzzleFlash()
@@ -124,12 +114,11 @@ public class PistolWeapon : BaseWeapon
     }
 
     
-    // Переопределение точки выстрела
-    public override Vector3 GetFirePoint()
-    { return firePoint != null ? firePoint.position : transform.position; }
+    // Переопределение точки выстрела - требуется фикс
+    //public override Vector3 GetFirePoint() 
+    //{ return firePoint != null ? firePoint.position : transform.position; }
 
-    // Переопределение направления выстрела
-    public override Vector3 GetFireDirection()
-    {return firePoint != null ? firePoint.forward : transform.forward;}
->>>>>>> dev
+    // Переопределение направления выстрела - требуется фикс
+    //public override Vector3 GetFireDirection()
+    //{return firePoint != null ? firePoint.forward : transform.forward;}
 }

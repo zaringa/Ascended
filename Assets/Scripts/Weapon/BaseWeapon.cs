@@ -50,7 +50,7 @@ public abstract class BaseWeapon : MonoBehaviour
 
     protected IEnumerator ReloadCoroutine()
     {
-        isReloading = true;
+        /*isReloading = true;
 
         OnReloadStarted?.Invoke();
         Debug.Log($"Начало перезарядки {gunInfo.name}...");
@@ -70,6 +70,7 @@ public abstract class BaseWeapon : MonoBehaviour
         currentMagazineAmmo = gunInfo.maxMagazineCapacity;
 
         isReloading = false;
-        Debug.Log("Перезарядка завершена.");
+        Debug.Log("Перезарядка завершена.");*/
+        yield return new WaitForSeconds(1); //! Удалить после фикса !
     }
 }
