@@ -19,9 +19,14 @@ public abstract class BaseWeapon : MonoBehaviour
             return;
         }
 
-        // Инициализация состояния
-        currentMagazineAmmo = gunInfo.maxMagazineCapacity;
-        lastFireTime = -gunInfo.fireRate;
+        // Проверка специфичных данных для типа оружия
+        if (gunInfo.type == GunInfo.WeaponType.Firearm)
+        {
+            if (gunInfo.projectilePrefab == null)
+            {
+                Debug.LogWarning($"[{gunInfo.name}] Не задан префаб снаряда для огнестрельного оружия!");
+            }
+        }
     }
     
     // *** АБСТРАКТНЫЙ МЕТОД: Должен быть реализован каждым дочерним классом ***
@@ -46,10 +51,19 @@ public abstract class BaseWeapon : MonoBehaviour
     protected IEnumerator ReloadCoroutine()
     {
         isReloading = true;
-        Debug.Log($"Начало перезарядки {gunInfo.gunName}...");
-        
-        // Анимация или звук начала
-        
+
+        OnReloadStarted?.Invoke();
+        Debug.Log($"Начало перезарядки {gunInfo.name}...");
+
+        // Воспроизведение звука перезарядки
+        PlaySound(gunInfo.reloadSound);
+
+        // Анимация перезарядки
+        if (animator != null)
+        {
+            animator.SetTrigger("Reload");
+        }
+
         yield return new WaitForSeconds(gunInfo.reloadTime);
 
         // В реальной игре тут будет расчет, сколько патронов взять из инвентаря.
