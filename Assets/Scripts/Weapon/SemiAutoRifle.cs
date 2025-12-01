@@ -22,9 +22,10 @@ public class SemiAutoRifle : BaseWeapon
 
         lastFireTime = Time.time;
         currentMagazineAmmo--;
-        InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
-        InvokeWeaponFired();
-        PlaySound(gunInfo.fireSound);
+        //TODO Нужен фикс
+        // InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
+        // InvokeWeaponFired();
+        // PlaySound(gunInfo.fireSound);
 
         // Логика стрельбы (например, создание снаряда)
         Debug.Log("SemiAutoRifle fired!");

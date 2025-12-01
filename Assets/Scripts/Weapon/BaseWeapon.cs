@@ -50,7 +50,9 @@ public abstract class BaseWeapon : MonoBehaviour
 
     protected IEnumerator ReloadCoroutine()
     {
-        /*isReloading = true;
+        //TODO Нужен фикс
+        /*
+        isReloading = true;
 
         OnReloadStarted?.Invoke();
         Debug.Log($"Начало перезарядки {gunInfo.name}...");
@@ -71,6 +73,6 @@ public abstract class BaseWeapon : MonoBehaviour
 
         isReloading = false;
         Debug.Log("Перезарядка завершена.");*/
-        yield return new WaitForSeconds(1); //! Удалить после фикса !
+        yield return new WaitForSeconds(1); //! Удалить после фикса
     }
 }

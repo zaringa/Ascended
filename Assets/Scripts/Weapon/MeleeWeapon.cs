@@ -37,6 +37,7 @@ public class MeleeWeapon : BaseWeapon
     }
     public override bool TryToFire()
     {
+        //TODO Нужен фикс
         /*// Проверка, что оружие не атакует и не перезаряжается
         if (isAttacking || isReloading)
         {
@@ -56,6 +57,7 @@ public class MeleeWeapon : BaseWeapon
     
     private IEnumerator AttackCoroutine()
     {
+        //TODO Нужен фикс
         /*isAttacking = true;
         hitTargets.Clear();
         InvokeWeaponAttack();
@@ -108,7 +110,7 @@ public class MeleeWeapon : BaseWeapon
 
     private void OnTriggerEnter(Collider other)
     {
-        // Требуется фикс
+        //TODO Нужен фикс
         /*if (!canDealDamage) return;
 
         // Проверяем, находится ли объект на нужном слое
@@ -148,7 +150,7 @@ public class MeleeWeapon : BaseWeapon
         RaycastHit[] hits = Physics.SphereCastAll(origin, sphereCastRadius, direction, gunInfo.meleeRange, gunInfo.meleeHitLayers);
 
         foreach (RaycastHit hit in hits)
-        { // Требуется фикс
+        { //TODO Нужен фикс
             /*IDamageable damageable = hit.collider.GetComponent<IDamageable>();
             if (damageable != null && !hitTargets.Contains(damageable))
             {

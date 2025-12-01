@@ -12,7 +12,8 @@ public class Katana : BaseWeapon
 
     public override bool TryToFire()
     {
-        if (isAttacking || Time.time - lastFireTime < attackCooldown)
+        //TODO Нужен фикс
+        /*if (isAttacking || Time.time - lastFireTime < attackCooldown)
             return false;
 
         lastFireTime = Time.time;
@@ -23,7 +24,7 @@ public class Katana : BaseWeapon
         // Логика ближнего боя
         PerformMeleeAttack();
 
-        isAttacking = false;
+        isAttacking = false;*/
         return true;
     }
 

@@ -21,9 +21,11 @@ public class DoubleBarrelShotgun : BaseWeapon
         }
 
         currentMagazineAmmo -= 2;
+        //TODO Нужен фикс
+        /*
         InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
         InvokeWeaponFired();
-        PlaySound(gunInfo.fireSound);
+        PlaySound(gunInfo.fireSound);*/
 
         // Логика конуса урона
         ApplyConeDamage();

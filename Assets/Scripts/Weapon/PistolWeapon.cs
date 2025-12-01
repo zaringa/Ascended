@@ -51,8 +51,9 @@ public class PistolWeapon : BaseWeapon
         }
     }
 
-    private void Fire() // Требуется фикс
+    private void Fire()
     {
+        //TODO Нужен фикс
         /*Debug.Log($"[{gunInfo.name}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
         InvokeWeaponFired();
         // PlaySound(gunInfo.fireSound); - временный мут чтобы воспроизводить очередь
@@ -62,8 +63,9 @@ public class PistolWeapon : BaseWeapon
         SpawnProjectile();*/
     }
 
-    private void SpawnProjectile() // Требуется фикс
+    private void SpawnProjectile()
     {
+        //TODO Нужен фикс
         /*if (gunInfo.projectilePrefab == null)
         {
             Debug.LogError($"[{gunInfo.name}] Префаб снаряда не назначен!");

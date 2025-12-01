@@ -40,6 +40,7 @@ public class WeaponInputHandler : MonoBehaviour
 
     private void Update()
     {
+        //TODO Нужен фикс
         /*if (weapon == null) return; - Требуется фикс
         if (mouse == null || keyboard == null) return;
 
@@ -105,8 +106,9 @@ public class WeaponInputHandler : MonoBehaviour
     }
 
     // Отображение информации на экране
-    private void OnGUI() // - Требуется фикс
+    private void OnGUI()
     {
+        //TODO Нужен фикс
         /*if (weapon == null) return;
 
         GUIStyle style = new GUIStyle(GUI.skin.label);
