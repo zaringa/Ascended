@@ -24,5 +24,8 @@ namespace Player.Inventory
         [Header("Расходники")]
         [SerializeField] private IConsumable[] craftedConsumables = new IConsumable[3];
         [SerializeField] private List<(IConsumable, int)> consumables;
+
+        public GunInfo GetGunInfo(bool isPrimary) =>
+            isPrimary ? primaryWeapon : secondaryWeapon;
     }
 }
