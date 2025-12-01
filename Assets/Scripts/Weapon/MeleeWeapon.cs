@@ -10,7 +10,7 @@ public class MeleeWeapon : BaseWeapon
     [SerializeField] private bool useSphereCast = false; // Альтернативный метод детекции через SphereCast
     [SerializeField] private float sphereCastRadius = 0.5f;
 
-    private HashSet<IDamageable> hitTargets = new HashSet<IDamageable>(); // Чтобы не наносить урон дважды за один удар
+    //private HashSet<IDamageable> hitTargets = new HashSet<IDamageable>(); // Чтобы не наносить урон дважды за один удар
     private bool canDealDamage = false; // Флаг, можно ли наносить урон в данный момент
 
     protected override void Start()
@@ -20,7 +20,7 @@ public class MeleeWeapon : BaseWeapon
         // Проверка наличия коллайдера лезвия
         if (bladeCollider == null)
         {
-            Debug.LogWarning($"[{gunInfo.gunName}] Коллайдер лезвия не назначен! Ищем автоматически...");
+            Debug.LogWarning($"[{gunInfo.name}] Коллайдер лезвия не назначен! Ищем автоматически...");
             bladeCollider = GetComponentInChildren<Collider>();
         }
 
@@ -32,12 +32,12 @@ public class MeleeWeapon : BaseWeapon
         }
         else
         {
-            Debug.LogError($"[{gunInfo.gunName}] Коллайдер лезвия не найден! Холодное оружие не будет работать!");
+            Debug.LogError($"[{gunInfo.name}] Коллайдер лезвия не найден! Холодное оружие не будет работать!");
         }
     }
     public override bool TryToFire()
     {
-        // Проверка, что оружие не атакует и не перезаряжается
+        /*// Проверка, что оружие не атакует и не перезаряжается
         if (isAttacking || isReloading)
         {
             return false;
@@ -50,16 +50,17 @@ public class MeleeWeapon : BaseWeapon
         }
         StartCoroutine(AttackCoroutine());
         lastFireTime = Time.time;
-        return true;
+        return true;*/
+        return false; // Удалить после фикса
     }
     
     private IEnumerator AttackCoroutine()
     {
-        isAttacking = true;
+        /*isAttacking = true;
         hitTargets.Clear();
         InvokeWeaponAttack();
 
-        Debug.Log($"[{gunInfo.gunName}] Начало атаки холодным оружием");
+        Debug.Log($"[{gunInfo.name}] Начало атаки холодным оружием");
 
         // Воспроизведение звука взмаха
         PlaySound(gunInfo.meleeSwingSound);
@@ -83,7 +84,7 @@ public class MeleeWeapon : BaseWeapon
             bladeCollider.enabled = true;
         }
 
-        Debug.Log($"[{gunInfo.gunName}] Фаза нанесения урона началась");
+        Debug.Log($"[{gunInfo.name}] Фаза нанесения урона началась");
 
         // Ждем окончания фазы удара
         yield return new WaitForSeconds(attackEndDelay - attackStartDelay);
@@ -95,18 +96,20 @@ public class MeleeWeapon : BaseWeapon
             bladeCollider.enabled = false;
         }
 
-        Debug.Log($"[{gunInfo.gunName}] Фаза нанесения урона закончилась");
+        Debug.Log($"[{gunInfo.name}] Фаза нанесения урона закончилась");
 
         // Ждем окончания анимации
         yield return new WaitForSeconds(gunInfo.meleeAttackDuration - attackEndDelay);
 
         isAttacking = false;
-        Debug.Log($"[{gunInfo.gunName}] Атака завершена. Поражено целей: {hitTargets.Count}");
+        Debug.Log($"[{gunInfo.name}] Атака завершена. Поражено целей: {hitTargets.Count}");*/
+        yield return new WaitForSeconds(1); // Удалить после фикса
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!canDealDamage) return;
+        // Требуется фикс
+        /*if (!canDealDamage) return;
 
         // Проверяем, находится ли объект на нужном слое
         if (gunInfo.meleeHitLayers != (gunInfo.meleeHitLayers | (1 << other.gameObject.layer)))
@@ -128,11 +131,11 @@ public class MeleeWeapon : BaseWeapon
             // Звук попадания
             PlaySound(gunInfo.meleeHitSound);
 
-            Debug.Log($"[{gunInfo.gunName}] Попадание по {other.gameObject.name}, урон: {gunInfo.damage}");
+            Debug.Log($"[{gunInfo.name}] Попадание по {other.gameObject.name}, урон: {gunInfo.damage}");
 
             // Можно добавить эффекты попадания
             CreateMeleeHitEffect(hitPoint, hitNormal);
-        }
+        }*/
     }
     
     private void PerformSphereCastAttack()
@@ -145,8 +148,8 @@ public class MeleeWeapon : BaseWeapon
         RaycastHit[] hits = Physics.SphereCastAll(origin, sphereCastRadius, direction, gunInfo.meleeRange, gunInfo.meleeHitLayers);
 
         foreach (RaycastHit hit in hits)
-        {
-            IDamageable damageable = hit.collider.GetComponent<IDamageable>();
+        { // Требуется фикс
+            /*IDamageable damageable = hit.collider.GetComponent<IDamageable>();
             if (damageable != null && !hitTargets.Contains(damageable))
             {
                 damageable.TakeDamage(gunInfo.damage, hit.point, hit.normal);
@@ -155,8 +158,8 @@ public class MeleeWeapon : BaseWeapon
                 PlaySound(gunInfo.meleeHitSound);
                 CreateMeleeHitEffect(hit.point, hit.normal);
 
-                Debug.Log($"[{gunInfo.gunName}] SphereCast попадание по {hit.collider.gameObject.name}");
-            }
+                Debug.Log($"[{gunInfo.name}] SphereCast попадание по {hit.collider.gameObject.name}");
+            }*/
         }
     }
 

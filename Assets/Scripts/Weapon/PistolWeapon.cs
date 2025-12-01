@@ -16,7 +16,7 @@ public class PistolWeapon : BaseWeapon
         // Если точка выстрела не задана, используем позицию оружия
         if (firePoint == null)
         {
-            Debug.LogWarning($"[{gunInfo.gunName}] Fire Point не назначен, используется позиция оружия");
+            Debug.LogWarning($"[{gunInfo.name}] Fire Point не назначен, используется позиция оружия");
             firePoint = transform;
         }
 
@@ -28,39 +28,45 @@ public class PistolWeapon : BaseWeapon
     {
         // Проверка готовности (перезарядка, скорострельность)
         if (isReloading || Time.time < lastFireTime + gunInfo.fireRate)
-        {return false;}
+        {
+            return false;
+        }
 
         if (currentMagazineAmmo > 0)
         {
             currentMagazineAmmo--;
             lastFireTime = Time.time;
-            Fire();
-            InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
+            
+            // --- Логика стрельбы Пистолета ---
+            Debug.Log($"[ПИСТОЛЕТ] Выстрел. Урон: {gunInfo.damage}");
+            
+            // TODO: Raycast или логика нанесения урона
+            
             return true;
         }
         else
         {
-            Debug.Log($"[{gunInfo.gunName}] Патроны закончились! Нужна перезарядка.");
+            Debug.Log($"[{gunInfo.name}] Патроны закончились! Нужна перезарядка.");
             return false;
         }
     }
 
-    private void Fire()
+    private void Fire() // Требуется фикс
     {
-        Debug.Log($"[{gunInfo.gunName}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
+        /*Debug.Log($"[{gunInfo.name}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
         InvokeWeaponFired();
         // PlaySound(gunInfo.fireSound); - временный мут чтобы воспроизводить очередь
         PlayMuzzleFlash();
         if (animator != null)
         {animator.SetTrigger("Fire");}
-        SpawnProjectile();
+        SpawnProjectile();*/
     }
 
-    private void SpawnProjectile()
+    private void SpawnProjectile() // Требуется фикс
     {
-        if (gunInfo.projectilePrefab == null)
+        /*if (gunInfo.projectilePrefab == null)
         {
-            Debug.LogError($"[{gunInfo.gunName}] Префаб снаряда не назначен!");
+            Debug.LogError($"[{gunInfo.name}] Префаб снаряда не назначен!");
             return;
         }
 
@@ -85,9 +91,9 @@ public class PistolWeapon : BaseWeapon
         }
         else
         {
-            Debug.LogError($"[{gunInfo.gunName}] У префаба снаряда нет компонента Projectile!");
+            Debug.LogError($"[{gunInfo.name}] У префаба снаряда нет компонента Projectile!");
             Destroy(projectileObj);
-        }
+        }*/
     }
 
     private void PlayMuzzleFlash()
@@ -108,11 +114,11 @@ public class PistolWeapon : BaseWeapon
     }
 
     
-    // Переопределение точки выстрела
-    public override Vector3 GetFirePoint()
-    { return firePoint != null ? firePoint.position : transform.position; }
+    // Переопределение точки выстрела - требуется фикс
+    //public override Vector3 GetFirePoint() 
+    //{ return firePoint != null ? firePoint.position : transform.position; }
 
-    // Переопределение направления выстрела
-    public override Vector3 GetFireDirection()
-    {return firePoint != null ? firePoint.forward : transform.forward;}
+    // Переопределение направления выстрела - требуется фикс
+    //public override Vector3 GetFireDirection()
+    //{return firePoint != null ? firePoint.forward : transform.forward;}
 }

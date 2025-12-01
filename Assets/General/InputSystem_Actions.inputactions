@@ -34,9 +34,18 @@
                     "initialStateCheck": true
                 },
                 {
+                    "name": "Dash",
+                    "type": "Button",
+                    "id": "34ab0747-5a0a-404b-ac3e-ec6d32e045be",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
                     "name": "Slide",
                     "type": "Button",
-                    "id": "6c65898f-7714-40bb-8f0d-af6dedc50857",
+                    "id": "20c153c1-f863-4ee3-843f-06d2ccd74d33",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -178,11 +187,22 @@
                 },
                 {
                     "name": "",
-                    "id": "e126bb13-0025-42d6-bb82-a65a3793e9a4",
-                    "path": "<Keyboard>/c",
+                    "id": "c6d8d88b-cc21-4616-8de9-f00369487504",
+                    "path": "<Keyboard>/leftShift",
                     "interactions": "",
                     "processors": "",
-                    "groups": ";Keyboard&Mouse",
+                    "groups": "",
+                    "action": "Dash",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "352b1567-68b2-4691-a838-dc4e425534d5",
+                    "path": "<Keyboard>/leftCtrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
                     "action": "Slide",
                     "isComposite": false,
                     "isPartOfComposite": false

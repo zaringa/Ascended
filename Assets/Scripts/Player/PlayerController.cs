@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using System;
+using System.Collections;
+using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
@@ -6,11 +9,14 @@ public class PlayerController : MonoBehaviour
 {
     [Header("Input")]
     [SerializeField] private InputActionReference movementAction;
+    [SerializeField] private InputActionReference dashAction;
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private InputActionReference slideAction;
 
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
+    [SerializeField] private float dashSpeed = 200.0f;
+
 
     [Header("Jump")]
     [SerializeField] private bool allowJump = true;
@@ -18,10 +24,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float jumpBufferTime = 0.1f;
     [SerializeField] private float coyoteTime = 0.1f;
 
-    [Header("Gravity")]
-    [SerializeField] private float gravity = -9.81f;
-
-    [Header("Slide Settings")]
+    [Header("Slide")]
     [SerializeField] private float slideDuration = 0.3f;
     [SerializeField] private float slideSpeed = 15f;
     [SerializeField] private float slideFriction = 7.35f;
@@ -32,12 +35,18 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float slideCooldown = 1.5f;
     [SerializeField] private float momentumDecayTime = 0.5f;
 
+    [Header("Gravity")]
+    [SerializeField] private float gravity = -9.81f;
+
     private CharacterController characterController;
     private Vector3 velocity;
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
     private float slideCooldownCounter;
     private bool wasGroundedLastFrame;
+    private Vector3 bufferMoveDir;
+    private Vector3 moveDirection;
+
     private bool isSliding;
     private float slideTimer;
     private Vector3 slideDirection;
@@ -47,7 +56,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 momentumVelocity;
     private float momentumTimer;
 
-    private void Awake()
+    void Awake()
     {
         characterController = GetComponent<CharacterController>();
         originalHeight = characterController.height;
@@ -57,28 +66,36 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnEnable()
+    void OnEnable()
     {
         movementAction?.action.Enable();
         jumpAction?.action.Enable();
-        slideAction?.action.Enable();
         jumpAction.action.performed += OnJumpPerformed;
+        dashAction?.action.Enable();
+        dashAction.action.performed += OnDashPerformed;
+        slideAction?.action.Enable();
         slideAction.action.performed += OnSlidePerformed;
     }
 
-    private void OnDisable()
+    void OnDisable()
     {
         movementAction?.action.Disable();
         jumpAction?.action.Disable();
-        slideAction?.action.Disable();
         jumpAction.action.performed -= OnJumpPerformed;
+        dashAction?.action.Disable();
+        dashAction.action.performed -= OnDashPerformed;
+        slideAction?.action.Disable();
         slideAction.action.performed -= OnSlidePerformed;
     }
 
-    private void Update()
+    void Update()
     {
         UpdateTimers();
-        HandleMovement();
+
+        if (bufferMoveDir == Vector3.zero)
+        {
+            HandleMovement();
+        }
         HandleJump();
         HandleSlide();
         ApplyGravity();
@@ -86,7 +103,7 @@ public class PlayerController : MonoBehaviour
         wasGroundedLastFrame = characterController.isGrounded;
     }
 
-    private void UpdateTimers()
+    void UpdateTimers()
     {
         if (jumpBufferCounter > 0) jumpBufferCounter -= Time.deltaTime;
         
@@ -111,13 +128,13 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void HandleMovement()
+    void HandleMovement()
     {
-        if (isSliding) return;
-
         Vector2 input = movementAction.action.ReadValue<Vector2>();
-        Vector3 moveDirection = transform.right * input.x + transform.forward * input.y;
-        
+        moveDirection = transform.right * input.x + transform.forward * input.y;
+        velocity.x = moveDirection.x * movementSpeed;
+        velocity.z = moveDirection.z * movementSpeed;
+
         if (hasMomentum && momentumTimer > 0)
         {
             if (input.magnitude > 0.1f)
@@ -142,12 +159,34 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void OnJumpPerformed(InputAction.CallbackContext context)
+    void OnJumpPerformed(InputAction.CallbackContext context)
     {
         jumpBufferCounter = jumpBufferTime;
     }
 
-    private void HandleJump()
+    void OnDashPerformed(InputAction.CallbackContext context)
+    {
+        bufferMoveDir = velocity;
+        if (moveDirection == Vector3.zero)
+        {
+            velocity = GetComponentInChildren<PlayerLook>().playerBody.forward * dashSpeed;
+        }
+        else
+        {
+            velocity = moveDirection * 200;
+        }
+        StartCoroutine(ReturnToNormal(.06f));
+    }
+    IEnumerator ReturnToNormal(float secondsRemaining)
+    {
+        
+        yield return new WaitForSeconds(secondsRemaining);
+        velocity = bufferMoveDir;
+
+        bufferMoveDir = Vector3.zero;
+    }
+
+    void HandleJump()
     {
         if (!allowJump) return;
 
@@ -160,9 +199,6 @@ public class PlayerController : MonoBehaviour
             velocity.y = jumpForce;
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
-            
-            hasMomentum = false;
-            momentumTimer = 0f;
         }
     }
 
@@ -240,7 +276,7 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    private void ApplyGravity()
+    void ApplyGravity()
     {
         if (characterController.isGrounded && velocity.y < 0)
         {
