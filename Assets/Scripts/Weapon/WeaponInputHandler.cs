@@ -33,19 +33,41 @@ public class WeaponInputHandler : MonoBehaviour
         }
         else
         {
-            Debug.Log($"[WeaponInputHandler] Найдено оружие: {weapon.gunInfo.gunName}");
+            Debug.Log($"[WeaponInputHandler] Найдено оружие: {weapon.gunInfo.name}");
             Debug.Log("ЛКМ - стрелять/атаковать, R - перезарядка");
         }
     }
 
     private void Update()
     {
-        if (weapon == null) return;
+        //TODO Нужен фикс
+        /*if (weapon == null) return; - Требуется фикс
         if (mouse == null || keyboard == null) return;
 
         if (useMouseButton)
         {
-            if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
+            if (weapon is SemiAutoRifle)
+            {
+                if (mouse.leftButton.wasPressedThisFrame)
+                {
+                    weapon.TryToFire();
+                }
+            }
+            else if (weapon is DoubleBarrelShotgun)
+            {
+                if (mouse.leftButton.wasPressedThisFrame)
+                {
+                    weapon.TryToFire();
+                }
+            }
+            else if (weapon is Katana)
+            {
+                if (mouse.leftButton.wasPressedThisFrame)
+                {
+                    weapon.TryToFire();
+                }
+            }
+            else if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
             {
                 if (mouse.leftButton.isPressed) // ЛКМ удержание
                 {
@@ -80,20 +102,21 @@ public class WeaponInputHandler : MonoBehaviour
         if (keyboard[alternativeFireKey].isPressed && alternativeFireKey != Key.R)
         {
             weapon.TryToFire();
-        }
+        }*/
     }
 
     // Отображение информации на экране
     private void OnGUI()
     {
-        if (weapon == null) return;
+        //TODO Нужен фикс
+        /*if (weapon == null) return;
 
         GUIStyle style = new GUIStyle(GUI.skin.label);
         style.fontSize = 18;
         style.normal.textColor = Color.white;
 
         GUI.Box(new Rect(10, 10, 250, 120), "");
-        GUI.Label(new Rect(20, 15, 300, 30), $"Оружие: {weapon.gunInfo.gunName}", style);
+        GUI.Label(new Rect(20, 15, 300, 30), $"Оружие: {weapon.gunInfo.name}", style);
 
         if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
         {
@@ -119,6 +142,6 @@ public class WeaponInputHandler : MonoBehaviour
             style.normal.textColor = Color.white;
         }
         style.fontSize = 14;
-        GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);
+        GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);*/
     }
 }

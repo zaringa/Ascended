@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections;
-using System;
 
 public abstract class BaseWeapon : MonoBehaviour
 {
@@ -10,61 +9,13 @@ public abstract class BaseWeapon : MonoBehaviour
     [Header("Текущее состояние")]
     protected int currentMagazineAmmo;
     protected bool isReloading = false;
-    protected bool isAttacking = false; // Для холодного оружия
     protected float lastFireTime;
-
-    [Header("Компоненты")]
-    protected AudioSource audioSource;
-    protected Animator animator;
-
-    // События для интеграции с UI и другими системами
-    public event Action<int, int> OnAmmoChanged; // (текущие патроны, макс. в обойме)
-    public event Action OnReloadStarted;
-    public event Action OnReloadCompleted;
-    public event Action OnWeaponFired;
-    public event Action OnWeaponAttack; // Для холодного оружия
-
-    public int CurrentAmmo => currentMagazineAmmo;
-    public int MaxAmmo => gunInfo != null ? gunInfo.maxMagazineCapacity : 0;
-    public bool IsReloading => isReloading;
-    public bool IsAttacking => isAttacking;
-    public GunInfo.WeaponType WeaponType => gunInfo != null ? gunInfo.type : GunInfo.WeaponType.Firearm;
-
-    protected virtual void Awake()
-    {
-        audioSource = GetComponent<AudioSource>();
-        if (audioSource == null)
-        {
-            audioSource = gameObject.AddComponent<AudioSource>();
-            audioSource.playOnAwake = false;
-            audioSource.spatialBlend = 1f; // 3D звук
-        }
-
-        animator = GetComponent<Animator>();
-    }
 
     protected virtual void Start()
     {
-        ValidateWeaponData();
-
-        if (gunInfo == null) return;
-
-        // Инициализация состояния для огнестрельного оружия
-        if (gunInfo.type == GunInfo.WeaponType.Firearm)
-        {
-            currentMagazineAmmo = gunInfo.maxMagazineCapacity;
-            lastFireTime = -gunInfo.fireRate;
-            OnAmmoChanged?.Invoke(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
-        }
-    }
-
-    // Валидация данных оружия
-    protected virtual void ValidateWeaponData()
-    {
         if (gunInfo == null)
         {
-            Debug.LogError($"[{gameObject.name}] GunInfo не задан!");
-            enabled = false;
+            Debug.LogError("GunInfo не задан для " + gameObject.name);
             return;
         }
 
@@ -73,48 +24,38 @@ public abstract class BaseWeapon : MonoBehaviour
         {
             if (gunInfo.projectilePrefab == null)
             {
-                Debug.LogWarning($"[{gunInfo.gunName}] Не задан префаб снаряда для огнестрельного оружия!");
+                Debug.LogWarning($"[{gunInfo.name}] Не задан префаб снаряда для огнестрельного оружия!");
             }
         }
     }
-
-    // АБСТРАКТНЫЙ МЕТОД: Должен быть реализован каждым дочерним классом
+    
+    // *** АБСТРАКТНЫЙ МЕТОД: Должен быть реализован каждым дочерним классом ***
     public abstract bool TryToFire();
-    
-    public virtual void OnFireButtonPressed()
-    {
-        PlaySound(gunInfo.fireSound);
-    }
-    
-    public virtual void OnFireButtonReleased()
-    {
-        // Можно добавить логику остановки звука
-    }
 
-    // Общая логика перезарядки
-    public virtual void StartReload()
+    // --- Общая логика перезарядки (одинаковая для всего огнестрела) ---
+    public void StartReload()
     {
-        // Перезаряжать можно только огнестрельное оружие
+        // Для примера, перезаряжать можно только огнестрельное оружие
         if (gunInfo.type != GunInfo.WeaponType.Firearm) return;
-
-        // Нельзя перезаряжаться во время перезарядки или атаки
-        if (isReloading || isAttacking) return;
-
-        // Если обойма уже полная
-        if (currentMagazineAmmo == gunInfo.maxMagazineCapacity)
+        
+        // Тут нужна дополнительная логика для проверки общего запаса патронов
+        // В рамках этого примера, упростим:
+        if (isReloading || currentMagazineAmmo == gunInfo.maxMagazineCapacity)
         {
-            Debug.Log($"[{gunInfo.gunName}] Обойма уже полная!");
             return;
         }
 
         StartCoroutine(ReloadCoroutine());
     }
 
-    protected virtual IEnumerator ReloadCoroutine()
+    protected IEnumerator ReloadCoroutine()
     {
+        //TODO Нужен фикс
+        /*
         isReloading = true;
+
         OnReloadStarted?.Invoke();
-        Debug.Log($"Начало перезарядки {gunInfo.gunName}...");
+        Debug.Log($"Начало перезарядки {gunInfo.name}...");
 
         // Воспроизведение звука перезарядки
         PlaySound(gunInfo.reloadSound);
@@ -127,46 +68,11 @@ public abstract class BaseWeapon : MonoBehaviour
 
         yield return new WaitForSeconds(gunInfo.reloadTime);
 
-        // Тут будет расчет, сколько патронов взять из инвентаря
-        // Пока что просто заполняем обойму полностью
+        // В реальной игре тут будет расчет, сколько патронов взять из инвентаря.
         currentMagazineAmmo = gunInfo.maxMagazineCapacity;
 
         isReloading = false;
-        OnReloadCompleted?.Invoke();
-        OnAmmoChanged?.Invoke(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
-        Debug.Log("Перезарядка завершена.");
+        Debug.Log("Перезарядка завершена.");*/
+        yield return new WaitForSeconds(1); //! Удалить после фикса
     }
-
-    // Вспомогательный метод для воспроизведения звуков
-    protected void PlaySound(AudioClip clip)
-    {
-        if (clip != null && audioSource != null)
-        {
-            audioSource.PlayOneShot(clip);
-        }
-    }
-
-    // Обновление счетчика патронов
-    protected void UpdateAmmo(int newAmmo)
-    {
-        currentMagazineAmmo = newAmmo;
-        OnAmmoChanged?.Invoke(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
-    }
-    
-    protected void InvokeWeaponFired()
-    {OnWeaponFired?.Invoke();}
-
-    protected void InvokeWeaponAttack()
-    {OnWeaponAttack?.Invoke();}
-
-    protected void InvokeAmmoChanged(int current, int max)
-    {OnAmmoChanged?.Invoke(current, max);}
-
-    // Метод для получения точки выстрела
-    public virtual Vector3 GetFirePoint()
-    {return transform.position + transform.forward;}
-
-    // Метод для получения направления выстрела
-    public virtual Vector3 GetFireDirection()
-    {return transform.forward;}
 }
