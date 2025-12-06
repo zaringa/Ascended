@@ -345,7 +345,7 @@ MonoBehaviour:
   dashAction: {fileID: -6192597183114217218, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   jumpAction: {fileID: -6000595813187283402, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   slideAction: {fileID: 3661101364445421467, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  movementSpeed: 5
+  movementSpeed: 15
   dashSpeed: 200
   allowJump: 1
   jumpHeight: 2

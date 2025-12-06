@@ -16,6 +16,8 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
     [SerializeField] private float dashSpeed = 200.0f;
+    [SerializeField] private float jumpSpeedBoostFactor = 0.3f; // Сколько горизонт. скорости добавляется к высоте прыжка (в метрах). 0 = выкл.
+    [SerializeField] private float airControlSpeed = 0.5f;     // Насколько медленно меняется направление в воздухе (0 = невозможно, 1 = нормальный контроль)       // 0 = никакого контроля в воздухе, 1 = полный контроль как на земле
 
 
     [Header("Jump")]
@@ -131,31 +133,53 @@ public class PlayerController : MonoBehaviour
     void HandleMovement()
     {
         Vector2 input = movementAction.action.ReadValue<Vector2>();
-        moveDirection = transform.right * input.x + transform.forward * input.y;
-        velocity.x = moveDirection.x * movementSpeed;
-        velocity.z = moveDirection.z * movementSpeed;
+        Vector3 inputDir = transform.right * input.x + transform.forward * input.y;
 
-        if (hasMomentum && momentumTimer > 0)
+        // Горизонтальная скорость (x/z)
+        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+
+        // Управление на земле — полное
+        if (characterController.isGrounded || isSliding)
         {
-            if (input.magnitude > 0.1f)
-            {
-                Vector3 newVelocity = moveDirection * movementSpeed;
-                
-                float t = 1f - (momentumTimer / momentumDecayTime);
-                velocity.x = Mathf.Lerp(momentumVelocity.x, newVelocity.x, t);
-                velocity.z = Mathf.Lerp(momentumVelocity.z, newVelocity.z, t);
-            }
-            else
-            {
-                float decayFactor = momentumTimer / momentumDecayTime;
-                velocity.x = momentumVelocity.x * decayFactor;
-                velocity.z = momentumVelocity.z * decayFactor;
-            }
+            float targetSpeed = isSliding ? Mathf.Max(slideSpeed, movementSpeed) : movementSpeed;
+            Vector3 targetVelocity = inputDir * targetSpeed;
+            velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, 10f * Time.deltaTime);
+            velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, 10f * Time.deltaTime);
         }
         else
         {
-            velocity.x = moveDirection.x * movementSpeed;
-            velocity.z = moveDirection.z * movementSpeed;
+            // В воздухе — сохраняем текущую скорость, но медленно изменяем её при вводе
+            if (input.magnitude > 0.1f)
+            {
+                // Целевая скорость — то, куда хочешь двигаться
+                Vector3 targetVelocity = inputDir * movementSpeed;
+
+                // Медленное изменение текущей скорости к целевой
+                velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, airControlSpeed * 0.5f * Time.deltaTime); // 0.5f — делаем ещё медленнее
+                velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, airControlSpeed * 0.5f * Time.deltaTime);
+            }
+            // Если нет ввода — скорость остаётся без изменений
+        }
+
+        // Обработка импульса после слайда
+        if (hasMomentum && momentumTimer > 0)
+        {
+            float decayFactor = momentumTimer / momentumDecayTime;
+            Vector3 momentumContribution = momentumVelocity * decayFactor;
+
+            if (input.magnitude > 0.1f)
+            {
+                // Смешиваем импульс и ввод
+                Vector3 blendedTarget = Vector3.Lerp(momentumContribution, inputDir * movementSpeed, 0.3f); // 30% от ввода
+                velocity.x = Mathf.Lerp(velocity.x, blendedTarget.x, airControlSpeed * 0.3f * Time.deltaTime);
+                velocity.z = Mathf.Lerp(velocity.z, blendedTarget.z, airControlSpeed * 0.3f * Time.deltaTime);
+            }
+            else
+            {
+                // Без ввода — просто затухание импульса
+                velocity.x = Mathf.Lerp(velocity.x, momentumContribution.x, 0.3f * Time.deltaTime);
+                velocity.z = Mathf.Lerp(velocity.z, momentumContribution.z, 0.3f * Time.deltaTime);
+            }
         }
     }
 
@@ -190,13 +214,25 @@ public class PlayerController : MonoBehaviour
     {
         if (!allowJump) return;
 
-        float jumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
+        // Базовая сила прыжка
+        float baseJumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+        // ➕ Добавка от горизонтальной скорости (только при прыжке с земли/слайда)
+        float speedBoost = 0f;
+        if (characterController.isGrounded || isSliding)
+        {
+            Vector3 horizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+            float speed = horizontalVelocity.magnitude;
+            speedBoost = speed * jumpSpeedBoostFactor;
+        }
+
+        float totalJumpForce = baseJumpForce + speedBoost;
 
         bool canJump = characterController.isGrounded || coyoteTimeCounter > 0;
-        
+
         if (jumpBufferCounter > 0 && canJump)
         {
-            velocity.y = jumpForce;
+            velocity.y = totalJumpForce;
             jumpBufferCounter = 0f;
             coyoteTimeCounter = 0f;
         }
@@ -234,6 +270,7 @@ public class PlayerController : MonoBehaviour
 
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
         slideDirection = currentHorizontalVelocity.normalized;
+        momentumVelocity = currentHorizontalVelocity; // ← Сохраняем не только направление, но и модуль!
         
         hasMomentum = false;
         momentumTimer = 0f;
@@ -280,7 +317,8 @@ public class PlayerController : MonoBehaviour
     {
         if (characterController.isGrounded && velocity.y < 0)
         {
-            velocity.y = -2f;
+            // Применяем небольшую "прилипательную" силу для стабильности
+            velocity.y = -2f; // можно вынести как [SerializeField] groundedStickForce
         }
         else
         {
