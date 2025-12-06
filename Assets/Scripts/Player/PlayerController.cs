@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float movementSpeed = 5f;
     [SerializeField] private float dashSpeed = 200.0f;
     [SerializeField] private float jumpSpeedBoostFactor = 0.3f; // Сколько горизонт. скорости добавляется к высоте прыжка (в метрах). 0 = выкл.
-[SerializeField] private float airControlSpeed = 0.5f;     // Насколько медленно меняется направление в воздухе (0 = невозможно, 1 = нормальный контроль)       // 0 = никакого контроля в воздухе, 1 = полный контроль как на земле
+    [SerializeField] private float airControlSpeed = 0.5f;     // Насколько медленно меняется направление в воздухе (0 = невозможно, 1 = нормальный контроль)       // 0 = никакого контроля в воздухе, 1 = полный контроль как на земле
 
 
     [Header("Jump")]
