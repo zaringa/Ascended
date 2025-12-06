@@ -16,6 +16,8 @@ public class PlayerController : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float movementSpeed = 5f;
     [SerializeField] private float dashSpeed = 200.0f;
+    [SerializeField] private float dashDuration = .06f;
+
 
 
     [Header("Jump")]
@@ -167,15 +169,23 @@ public class PlayerController : MonoBehaviour
     void OnDashPerformed(InputAction.CallbackContext context)
     {
         bufferMoveDir = velocity;
-        if (moveDirection == Vector3.zero)
+        if(characterController.isGrounded)
         {
-            velocity = GetComponentInChildren<PlayerLook>().playerBody.forward * dashSpeed;
-        }
+            if (moveDirection == Vector3.zero)
+            {
+                velocity = GetComponentInChildren<PlayerLook>().playerBody.forward * dashSpeed;
+            }
+            else
+            {
+                velocity = moveDirection * dashSpeed;
+            }
+        }    
         else
         {
-            velocity = moveDirection * 200;
-        }
-        StartCoroutine(ReturnToNormal(.06f));
+            velocity = GetComponentInChildren<PlayerLook>().transform.forward * dashSpeed;
+        }    
+
+        StartCoroutine(ReturnToNormal(dashDuration));
     }
     IEnumerator ReturnToNormal(float secondsRemaining)
     {
@@ -286,5 +296,10 @@ public class PlayerController : MonoBehaviour
         {
             velocity.y += gravity * Time.deltaTime;
         }
+    }
+    void OnCollisionEnter(Collision collision)
+    {
+        if (bufferMoveDir != Vector3.zero)
+            velocity = Vector3.zero;
     }
 }
