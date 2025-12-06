@@ -11,31 +11,21 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private InputActionReference slideAction;
 
-    [Header("Movement & Dash")]
+    [Header("Movement settings")]
     [SerializeField] private float movementSpeed = 5f;
     [SerializeField] private float momentumDecayTime = .05f;
-    [SerializeField] private float dashSpeed = 200.0f;
-    [SerializeField] private float dashDuration = .06f;
-
-    [Header("Jump")]
+    
+    [Header("Jump settings")]
     [SerializeField] private bool allowJump = true;
     [SerializeField] private float jumpHeight = 2f;
     [SerializeField] private float jumpBufferTime = 0.1f;
     [SerializeField] private float coyoteTime = 0.1f;
 
-    [Header("Wall Mechanics")]
-    [SerializeField] private float wallCheckDistance = 0.6f;
-    [SerializeField] private string wallTag = "Wall"; // Убедитесь, что у стен есть этот тег!
-    [SerializeField] private float wallSlideSpeed = -1f; // Скорость сползания
+    [Header("Dash settings")]
+    [SerializeField] private float dashSpeed = 200.0f;
+    [SerializeField] private float dashDuration = .06f;
 
-    [Header("Wall Jump Forces")]
-    [SerializeField] private float wallJumpHeight = 3f;      // Высота отскока
-    [SerializeField] private float wallJumpForce = 10f;      // Сила отталкивания от стены
-    [SerializeField] private float wallJumpMomentumDecay = 2f; // Скорость затухания импульса от стены
-    [SerializeField] private float wallJumpCooldownTime = 0.2f; // Время, когда нельзя прилипнуть к стене после отскока
-    [SerializeField] private float airControlDuringWallJump = 0.5f; // Управляемость в воздухе после отскока
-
-    [Header("Ground Slide")]
+    [Header("Slide settings")]
     [SerializeField] private float slideDuration = 0.5f;
     [SerializeField] private float slideSpeed = 12f;
     [SerializeField] private float slideFriction = 10f;
@@ -45,11 +35,20 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Transform cameraRoot;
     [SerializeField] private float slideCooldown = 1.0f;
 
-    // ================= HEADER: GRAVITY =================
+    [Header("Rebound settings")]
+    [SerializeField] private float wallCheckDistance = 0.6f;
+    [SerializeField] private string wallTag = "Wall"; // Убедитесь, что у стен есть этот тег!
+    [SerializeField] private float wallSlideSpeed = -1f; // Скорость сползания
+    [SerializeField] private float wallJumpHeight = 3f;      // Высота отскока
+    [SerializeField] private float wallJumpForce = 10f;      // Сила отталкивания от стены
+    [SerializeField] private float wallJumpMomentumDecay = 2f; // Скорость затухания импульса от стены
+    [SerializeField] private float wallJumpCooldownTime = 0.2f; // Время, когда нельзя прилипнуть к стене после отскока
+    [SerializeField] private float airControlDuringWallJump = 0.5f; // Управляемость в воздухе после отскока
+
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
 
-    // --- Private Variables ---
+    // Private Variables
     private CharacterController characterController;
     private Vector3 velocity;
     
@@ -315,39 +314,47 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- DASH LOGIC (Script 1) ---
     void OnDashPerformed(InputAction.CallbackContext context)
     {
-        // Запоминаем текущую скорость, чтобы вернуть её (опционально, или просто обнуляем)
-        bufferMoveDir = velocity; 
+        bufferMoveDir = velocity;
 
-        // Определяем направление рывка
-        Vector3 dashDir;
-        if (moveDirection == Vector3.zero)
-            dashDir = transform.forward; // Если стоим, рывок вперед
+        Vector3 dashDirection;
+
+        if(characterController.isGrounded)
+        {
+            dashDirection = moveDirection.normalized;
+        }
         else
-            dashDir = moveDirection.normalized;
+        {
+            Vector2 inputVector = movementAction.action.ReadValue<Vector2>();
+            
+            if (inputVector.magnitude == 0)
+            {
+                dashDirection = cameraRoot.transform.forward;
+            }
+            else
+            {
+                Vector3 inputWorldDirection = inputVector.x * cameraRoot.transform.right + inputVector.y * cameraRoot.transform.forward;
+                dashDirection = inputWorldDirection.normalized;
+            }
+            
+            velocity.y = 0;
+        }
 
-        velocity = dashDir * dashSpeed;
-        velocity.y = 0; // Обычно рывок идет горизонтально, убираем гравитацию на миг
+        velocity = dashDirection.normalized * dashSpeed;
 
-        StartCoroutine(ReturnToNormal(0.15f)); // Время действия рывка
+        StartCoroutine(ReturnToNormal(dashDuration));
     }
 
     IEnumerator ReturnToNormal(float dashDuration)
     {
         yield return new WaitForSeconds(dashDuration);
 
-        // После рывка включаем инерцию
-        momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
-        hasMomentum = true;
-        momentumTimer = momentumDecayTime;
+        // Возвращаем горизонтальную скорость до состояния до деша
+        velocity = new Vector3(bufferMoveDir.x, 0, bufferMoveDir.z);
 
-        // Сбрасываем флаг рывка (bufferMoveDir используется как флаг)
+        // Сбрасываем флаг деша
         bufferMoveDir = Vector3.zero;
-        
-        // Возвращаем вертикальную скорость к небольшому значению, чтобы начала действовать гравитация
-        velocity.y = -2f; 
     }
 
     // --- SLIDE LOGIC (Script 1) ---
@@ -442,13 +449,16 @@ public class PlayerController : MonoBehaviour
     {
         bool isSlidingOnWall = wallNormal != Vector3.zero && !characterController.isGrounded;
         
+        // Пропускаем гравитацию, если сейчас деш
+        if (bufferMoveDir != Vector3.zero) return;
+
         // 1. На земле
         if (characterController.isGrounded && velocity.y < 0)
         {
             velocity.y = -2f; // Прижимаем к земле
         }
         // 2. На стене (Wall Slide) - если не в рывке и не в кулдауне отскока
-        else if (isSlidingOnWall && wallJumpCooldownTimer <= 0 && bufferMoveDir == Vector3.zero)
+        else if (isSlidingOnWall && wallJumpCooldownTimer <= 0)
         {
             velocity.y += gravity * Time.deltaTime;
             // Ограничиваем скорость падения (скольжение)
