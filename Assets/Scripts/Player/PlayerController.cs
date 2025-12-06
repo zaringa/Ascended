@@ -13,6 +13,7 @@ public class PlayerController : MonoBehaviour
 
     [Header("Movement & Dash")]
     [SerializeField] private float movementSpeed = 5f;
+    [SerializeField] private float momentumDecayTime = .05f;
     [SerializeField] private float dashSpeed = 200.0f;
     [SerializeField] private float dashDuration = .06f;
 

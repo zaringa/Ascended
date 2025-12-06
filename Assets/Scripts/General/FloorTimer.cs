@@ -1,36 +1,21 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-[System.Serializable]
-public class evento
-{
-    [SerializeField]
-
-    public float triggerTime;
-    public string Event_;
-}
 public class FloorTimer : MonoBehaviour
 {
-    [Header("General")]
-    public float currentTime = 0F;
-    public List<evento> eventTimeline = new List<evento>();
-    [SerializeField]
-    private float maxTolerance = .4f;
-    // Update is called once per frame
-    void Update()
+    // Метод для вызова таймера, который задаёт время и вызываемый метод
+    public Coroutine TimerStart(float duration, Action callback)
     {
-        HandleTimer();
+        return StartCoroutine(TimerRoutine(duration, callback));
     }
 
-    private void HandleTimer()
+    // Тело таймера, который по завершении вызывает заданный метод
+    private IEnumerator TimerRoutine(float duration, Action callback)
     {
-        currentTime += Time.deltaTime;
-        if(Mathf.Abs(eventTimeline[0].triggerTime-currentTime)< maxTolerance)
-        {
-            Debug.Log(eventTimeline[0].Event_);
-            eventTimeline.RemoveAt(0);
-        }
+        yield return new WaitForSeconds(duration);
+        callback?.Invoke();
     }
 }
