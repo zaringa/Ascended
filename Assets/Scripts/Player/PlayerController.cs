@@ -24,6 +24,7 @@ public class PlayerController : MonoBehaviour
     [Header("Dash settings")]
     [SerializeField] private float dashSpeed = 200.0f;
     [SerializeField] private float dashDuration = .06f;
+    [SerializeField] private float dashCooldown = 0.5f; // Время кулдауна деша
 
     [Header("Slide settings")]
     [SerializeField] private float slideDuration = 0.5f;
@@ -37,13 +38,12 @@ public class PlayerController : MonoBehaviour
 
     [Header("Rebound settings")]
     [SerializeField] private float wallCheckDistance = 0.6f;
-    [SerializeField] private string wallTag = "Wall"; // Убедитесь, что у стен есть этот тег!
+    [SerializeField] private string wallTag = "Wall"; //! При использовании отскока убедитесь, что есть этот тег
     [SerializeField] private float wallSlideSpeed = -1f; // Скорость сползания
-    [SerializeField] private float wallJumpHeight = 3f;      // Высота отскока
-    [SerializeField] private float wallJumpForce = 10f;      // Сила отталкивания от стены
+    [SerializeField] private float wallJumpHeight = 3f; // Высота отскока
+    [SerializeField] private float wallJumpForce = 10f; // Сила отталкивания от стены
     [SerializeField] private float wallJumpMomentumDecay = 2f; // Скорость затухания импульса от стены
     [SerializeField] private float wallJumpCooldownTime = 0.2f; // Время, когда нельзя прилипнуть к стене после отскока
-    [SerializeField] private float airControlDuringWallJump = 0.5f; // Управляемость в воздухе после отскока
 
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
@@ -57,6 +57,7 @@ public class PlayerController : MonoBehaviour
     private float coyoteTimeCounter;
     private float slideCooldownCounter;
     private float wallJumpCooldownTimer;
+    private float dashCooldownCounter; // Новый таймер кулдауна деша
     
     // States
     private bool wasGroundedLastFrame;
@@ -71,6 +72,7 @@ public class PlayerController : MonoBehaviour
     // Wall Logic
     private Vector3 wallNormal = Vector3.zero;
     private Vector3 wallJumpMomentum = Vector3.zero;
+    private bool hasJumpedFromWall = false; // Новое поле: отслеживает, был ли прыжок от стены после отрыва от земли
 
     // Slide Logic
     private bool isSliding;
@@ -117,7 +119,7 @@ public class PlayerController : MonoBehaviour
         slideAction.action.performed -= OnSlidePerformed;
     }
 
-    void Update()
+        void Update()
     {
         UpdateTimers();
         HandleWallCheck();
@@ -132,8 +134,78 @@ public class PlayerController : MonoBehaviour
         HandleSlide(); // Логика подката (только на земле)
         ApplyGravity();
 
-        characterController.Move(velocity * Time.deltaTime);
+        // Сохраняем предыдущее состояние grounded
         wasGroundedLastFrame = characterController.isGrounded;
+
+        // Перемещение
+        Vector3 displacement = velocity * Time.deltaTime;
+        // Перемещаем и получаем результат столкновения
+        CollisionFlags collisionFlags = characterController.Move(displacement);
+
+        // Проверяем, столкнулись ли мы с чем-то сверху
+        if ((collisionFlags & CollisionFlags.Above) != 0)
+        {
+            // Если столкнулись сверху и поднимаемся, обнуляем вертикальную скорость
+            if (velocity.y > 0)
+            {
+                velocity.y = 0;
+            }
+        }
+        // Проверяем, столкнулись ли мы с чем-то снизу (но не сбоку, чтобы не ломать скольжение)
+        // Это может быть полезно при приземлении, но нужно быть осторожным
+        // CharacterController автоматически устанавливает isGrounded, если мы на земле
+    }
+
+    void ApplyGravity()
+    {
+        bool isSlidingOnWall = wallNormal != Vector3.zero && !characterController.isGrounded;
+
+        // Пропускаем гравитацию, если сейчас деш
+        if (bufferMoveDir != Vector3.zero) return;
+
+        // 1. На земле
+        if (characterController.isGrounded && velocity.y <= 0)
+        {
+            velocity.y = -2f; // Прижимаем к земле
+            // Сбрасываем флаг отскока при приземлении
+            hasJumpedFromWall = false;
+        }
+        // 2. На стене (Wall Slide) - если не в рывке и не в кулдауне отскока
+        else if (isSlidingOnWall && wallJumpCooldownTimer <= 0 && !hasJumpedFromWall)
+        {
+            velocity.y += gravity * Time.deltaTime;
+            // Ограничиваем скорость падения (скольжение)
+            if (velocity.y < wallSlideSpeed)
+            {
+                velocity.y = wallSlideSpeed;
+            }
+        }
+        // 3. В воздухе
+        else
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+    }
+
+    // Добавляем метод для обработки столкновений
+    void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        // Проверяем, столкнулись ли мы сверху
+        if (Vector3.Angle(hit.normal, Vector3.down) < 45f) // угол между нормалью и вектором вниз
+        {
+            if (velocity.y > 0) // если движемся вверх
+            {
+                velocity.y = 0; // обнуляем вертикальную скорость
+            }
+        }
+        // Проверяем, столкнулись ли мы снизу (например, при прыжке под потолок)
+        else if (Vector3.Angle(hit.normal, Vector3.up) < 45f)
+        {
+            if (velocity.y < 0) // если движемся вниз
+            {
+                velocity.y = 0; // обнуляем вертикальную скорость
+            }
+        }
     }
 
     void UpdateTimers()
@@ -144,6 +216,9 @@ public class PlayerController : MonoBehaviour
         // Wall Jump Cooldown
         if (wallJumpCooldownTimer > 0) wallJumpCooldownTimer -= Time.deltaTime;
 
+        // Dash Cooldown
+        if (dashCooldownCounter > 0) dashCooldownCounter -= Time.deltaTime;
+
         // Coyote Time
         if (characterController.isGrounded)
         {
@@ -151,6 +226,8 @@ public class PlayerController : MonoBehaviour
             // Сбрасываем инерцию от стены, если коснулись земли
             wallJumpMomentum = Vector3.zero;
             wallNormal = Vector3.zero;
+            // Сбрасываем флаг отскока при приземлении
+            hasJumpedFromWall = false;
         }
         else if (wasGroundedLastFrame)
         {
@@ -171,13 +248,16 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- WALL CHECK LOGIC (Script 2) ---
+    // --- WALL CHECK LOGIC ---
     void HandleWallCheck()
     {
         wallNormal = Vector3.zero;
 
         // Мы не ищем стену, если мы на земле (чтобы не липнуть к плинтусам)
         if (characterController.isGrounded) return;
+
+        // Не проверяем стену, если уже использовали отскок после прыжка
+        if (hasJumpedFromWall) return;
 
         RaycastHit hit;
         Vector3 origin = transform.position;
@@ -213,8 +293,8 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- MOVEMENT LOGIC (Merged) ---
-    void HandleMovement()
+    // --- MOVEMENT LOGIC ---
+        void HandleMovement()
     {
         Vector2 input = movementAction.action.ReadValue<Vector2>();
         moveDirection = transform.right * input.x + transform.forward * input.y;
@@ -222,16 +302,31 @@ public class PlayerController : MonoBehaviour
         // Приоритет 1: Инерция от Wall Jump (Script 2)
         if (wallJumpMomentum.magnitude > 0.1f)
         {
-            // Горизонтальная скорость определяется импульсом от стены
-            velocity.x = wallJumpMomentum.x;
-            velocity.z = wallJumpMomentum.z;
+            // Вычисляем, как давно произошёл отскок (через оставшееся время импульса)
+            float timeSinceJump = wallJumpMomentumDecay - Vector3.Distance(wallJumpMomentum, Vector3.zero) / wallJumpMomentumDecay;
+            float normalizedTime = timeSinceJump / wallJumpMomentumDecay;
+            
+            // Чем дольше прошло, тем больше контроль (от 0% до 100% за wallJumpMomentumDecay секунд)
+            float controlFactor = normalizedTime;
+            controlFactor = Mathf.Clamp01(controlFactor); // Ограничиваем от 0 до 1
 
-            // Добавляем немного контроля в воздухе
-            velocity.x += moveDirection.x * movementSpeed * airControlDuringWallJump;
-            velocity.z += moveDirection.z * movementSpeed * airControlDuringWallJump;
+            // Применяем ввод с плавающим контролем
+            if (input.magnitude > 0.1f)
+            {
+                Vector3 inputWorldDir = moveDirection.normalized;
+                Vector3 targetVelocity = inputWorldDir * movementSpeed;
 
-            // Затухание импульса стены
-            wallJumpMomentum = Vector3.MoveTowards(wallJumpMomentum, Vector3.zero, wallJumpMomentumDecay * Time.deltaTime);
+                // Плавное изменение текущей скорости к целевой, с изменяющимся коэффициентом
+                float lerpSpeed = 4f * controlFactor; // Чем дольше прошло, тем больше влияние ввода
+                velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, lerpSpeed * Time.deltaTime);
+                velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, lerpSpeed * Time.deltaTime);
+            }
+            else
+            {
+                // Без ввода: плавный переход от импульса к нулю
+                velocity.x = Mathf.Lerp(velocity.x, 0f, (1f - controlFactor) * 3f * Time.deltaTime);
+                velocity.z = Mathf.Lerp(velocity.z, 0f, (1f - controlFactor) * 3f * Time.deltaTime);
+            }
         }
         // Приоритет 2: Инерция после Dash или Slide (Script 1)
         else if (hasMomentum && momentumTimer > 0)
@@ -255,12 +350,46 @@ public class PlayerController : MonoBehaviour
         // Приоритет 3: Обычное движение
         else
         {
-            velocity.x = moveDirection.x * movementSpeed;
-            velocity.z = moveDirection.z * movementSpeed;
+            // Горизонтальная скорость (x/z)
+            Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+
+            // Управление на земле — с ускорением и замедлением
+            if (characterController.isGrounded && !isSliding)
+            {
+                // Если есть ввод направления
+                if (input.magnitude > 0.1f)
+                {
+                    Vector3 targetVelocity = moveDirection * movementSpeed;
+
+                    // Плавное изменение скорости к целевой (ускорение)
+                    velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, 10f * Time.deltaTime);
+                    velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, 10f * Time.deltaTime);
+                }
+                else
+                {
+                    // Нет ввода — плавное замедление (скольжение)
+                    velocity.x = Mathf.Lerp(velocity.x, 0f, 8f * Time.deltaTime);
+                    velocity.z = Mathf.Lerp(velocity.z, 0f, 8f * Time.deltaTime);
+                }
+            }
+            else
+            {
+                // В воздухе — изменение направления с ограниченной скоростью
+                if (input.magnitude > 0.1f)
+                {
+                    Vector3 inputWorldDir = moveDirection.normalized;
+                    Vector3 targetVelocity = inputWorldDir * movementSpeed;
+
+                    // Плавное изменение текущей скорости к целевой (меньший коэффициент для "тяжести" в воздухе)
+                    velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, 4f * Time.deltaTime);
+                    velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, 4f * Time.deltaTime);
+                }
+                // Если нет ввода в воздухе, скорость остается неизменной (или можно добавить большее затухание)
+            }
         }
     }
 
-    // --- JUMP LOGIC (Merged) ---
+    // --- JUMP LOGIC ---
     void OnJumpPerformed(InputAction.CallbackContext context)
     {
         jumpBufferCounter = jumpBufferTime;
@@ -270,7 +399,7 @@ public class PlayerController : MonoBehaviour
     {
         if (!allowJump) return;
 
-        bool isWallSliding = wallNormal != Vector3.zero && !characterController.isGrounded;
+        bool isWallSliding = wallNormal != Vector3.zero && !characterController.isGrounded && !hasJumpedFromWall;
         bool canGroundJump = characterController.isGrounded || coyoteTimeCounter > 0;
 
         if (jumpBufferCounter > 0)
@@ -278,15 +407,26 @@ public class PlayerController : MonoBehaviour
             // 1. WALL JUMP (Приоритет выше, если мы в воздухе у стены)
             if (isWallSliding)
             {
-                // Вектор отскока: от стены + вверх
-                Vector3 wallJumpDir = (wallNormal + Vector3.up).normalized;
+                // Текущая горизонтальная скорость перед отскоком
+                Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
                 
-                // Вертикальная сила
+                // Отражаем горизонтальную скорость относительно нормали стены
+                Vector3 reflectedHorizontalVelocity = Vector3.Reflect(currentHorizontalVelocity, wallNormal);
+                
+                // Вертикальная сила (только вверх)
                 float wallJumpVForce = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
-                velocity.y = wallJumpVForce;
+                
+                // Применяем силу отскока к отраженной горизонтальной скорости
+                Vector3 wallJumpHorizontalVelocity = reflectedHorizontalVelocity.normalized * wallJumpForce;
+                
+                // Итоговая скорость: горизонтальная сила отскока + вертикальная сила прыжка
+                velocity = new Vector3(wallJumpHorizontalVelocity.x, wallJumpVForce, wallJumpHorizontalVelocity.z);
 
-                // Горизонтальный импульс
-                wallJumpMomentum = wallNormal * wallJumpForce;
+                // Горизонтальный импульс (для последующего контроля)
+                wallJumpMomentum = wallJumpHorizontalVelocity;
+
+                // Устанавливаем флаг, что отскок был использован
+                hasJumpedFromWall = true;
 
                 // Кулдаун, чтобы сразу не прилипнуть обратно
                 wallJumpCooldownTimer = wallJumpCooldownTime;
@@ -302,8 +442,10 @@ public class PlayerController : MonoBehaviour
             // 2. GROUND JUMP
             else if (canGroundJump)
             {
-                float jumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
-                velocity.y = jumpForce;
+                float baseJumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
+
+                float totalJumpForce = baseJumpForce;
+                velocity.y = totalJumpForce;
                 
                 jumpBufferCounter = 0f;
                 coyoteTimeCounter = 0f;
@@ -316,6 +458,9 @@ public class PlayerController : MonoBehaviour
 
     void OnDashPerformed(InputAction.CallbackContext context)
     {
+        // Проверяем кулдаун деша
+        if (dashCooldownCounter > 0) return;
+
         bufferMoveDir = velocity;
 
         Vector3 dashDirection;
@@ -342,6 +487,9 @@ public class PlayerController : MonoBehaviour
         }
 
         velocity = dashDirection.normalized * dashSpeed;
+
+        // Устанавливаем кулдаун деша
+        dashCooldownCounter = dashCooldown;
 
         StartCoroutine(ReturnToNormal(dashDuration));
     }
@@ -445,34 +593,7 @@ public class PlayerController : MonoBehaviour
     }
 
     // --- GRAVITY LOGIC (Merged) ---
-    void ApplyGravity()
-    {
-        bool isSlidingOnWall = wallNormal != Vector3.zero && !characterController.isGrounded;
-        
-        // Пропускаем гравитацию, если сейчас деш
-        if (bufferMoveDir != Vector3.zero) return;
-
-        // 1. На земле
-        if (characterController.isGrounded && velocity.y < 0)
-        {
-            velocity.y = -2f; // Прижимаем к земле
-        }
-        // 2. На стене (Wall Slide) - если не в рывке и не в кулдауне отскока
-        else if (isSlidingOnWall && wallJumpCooldownTimer <= 0)
-        {
-            velocity.y += gravity * Time.deltaTime;
-            // Ограничиваем скорость падения (скольжение)
-            if (velocity.y < wallSlideSpeed)
-            {
-                velocity.y = wallSlideSpeed;
-            }
-        }
-        // 3. В воздухе
-        else
-        {
-            velocity.y += gravity * Time.deltaTime;
-        }
-    }
+    
     void OnCollisionEnter(Collision collision)
     {
         if (bufferMoveDir != Vector3.zero)
