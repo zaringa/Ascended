@@ -13,8 +13,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Movement & Dash")]
     [SerializeField] private float movementSpeed = 5f;
-    [SerializeField] private float dashSpeed = 20.0f; // Скорректировал значение, 200 было слишком много для Move, но если нужно верни
-    [SerializeField] private float momentumDecayTime = 0.5f; // Время затухания инерции после рывка/подката
+    [SerializeField] private float dashSpeed = 200.0f;
+    [SerializeField] private float dashDuration = .06f;
 
     [Header("Jump")]
     [SerializeField] private bool allowJump = true;
@@ -462,14 +462,9 @@ public class PlayerController : MonoBehaviour
             velocity.y += gravity * Time.deltaTime;
         }
     }
-
-    // Visual Debugging
-    private void OnDrawGizmos()
+    void OnCollisionEnter(Collision collision)
     {
-        if (Application.isPlaying && characterController != null && wallNormal != Vector3.zero)
-        {
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(transform.position, transform.position + wallNormal * 1.5f);
-        }
+        if (bufferMoveDir != Vector3.zero)
+            velocity = Vector3.zero;
     }
 }
