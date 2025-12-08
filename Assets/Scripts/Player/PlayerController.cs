@@ -5,50 +5,57 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    // ================= HEADER: INPUT =================
     [Header("Input")]
     [SerializeField] private InputActionReference movementAction;
     [SerializeField] private InputActionReference dashAction;
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private InputActionReference slideAction;
 
-    [Header("Movement settings")]
+    // ================= HEADER: MOVEMENT & MOMENTUM =================
+    [Header("Movement Settings")]
     [SerializeField] private float movementSpeed = 5f;
-    [SerializeField] private float momentumDecayTime = .05f;
-    
-    [Header("Jump settings")]
+    [SerializeField] private float momentumDecayTime = 0.5f; // Время затухания инерции (увеличил для импульсов)
+
+    // ================= HEADER: JUMP =================
+    [Header("Jump Settings")]
     [SerializeField] private bool allowJump = true;
     [SerializeField] private float jumpHeight = 2f;
     [SerializeField] private float jumpBufferTime = 0.1f;
     [SerializeField] private float coyoteTime = 0.1f;
 
-    [Header("Dash settings")]
-    [SerializeField] private float dashSpeed = 200.0f;
-    [SerializeField] private float dashDuration = .06f;
-    [SerializeField] private float dashCooldown = 0.5f; // Время кулдауна деша
+    // ================= HEADER: DASH =================
+    [Header("Dash Settings")]
+    [SerializeField] private float dashSpeed = 50.0f; // 200 слишком много для CharacterController, 50 комфортнее
+    [SerializeField] private float dashDuration = 0.15f;
+    [SerializeField] private float dashCooldown = 0.5f;
 
-    [Header("Slide settings")]
+    // ================= HEADER: SLIDE =================
+    [Header("Slide Settings")]
     [SerializeField] private float slideDuration = 0.5f;
     [SerializeField] private float slideSpeed = 12f;
     [SerializeField] private float slideFriction = 10f;
     [SerializeField] private float slideHeight = 1f;
     [SerializeField] private float cameraSlideOffset = -0.5f;
     [SerializeField] private float heightLerpSpeed = 10f;
-    [SerializeField] private Transform cameraRoot;
+    [SerializeField] private Transform cameraRoot; // Сюда вешаем объект камеры или pivot
     [SerializeField] private float slideCooldown = 1.0f;
 
-    [Header("Rebound settings")]
+    // ================= HEADER: WALL MECHANICS =================
+    [Header("Wall Mechanics")]
     [SerializeField] private float wallCheckDistance = 0.6f;
-    [SerializeField] private string wallTag = "Wall"; //! При использовании отскока убедитесь, что есть этот тег
-    [SerializeField] private float wallSlideSpeed = -1f; // Скорость сползания
-    [SerializeField] private float wallJumpHeight = 3f; // Высота отскока
-    [SerializeField] private float wallJumpForce = 10f; // Сила отталкивания от стены
-    [SerializeField] private float wallJumpMomentumDecay = 2f; // Скорость затухания импульса от стены
-    [SerializeField] private float wallJumpCooldownTime = 0.2f; // Время, когда нельзя прилипнуть к стене после отскока
+    [SerializeField] private string wallTag = "Wall"; 
+    [SerializeField] private float wallSlideSpeed = -1f;
+    [SerializeField] private float wallJumpHeight = 3f;
+    [SerializeField] private float wallJumpForce = 10f;
+    [SerializeField] private float wallJumpMomentumDecay = 1.5f; 
+    [SerializeField] private float wallJumpCooldownTime = 0.2f;
 
+    // ================= HEADER: GRAVITY =================
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
 
-    // Private Variables
+    // --- Private Variables ---
     private CharacterController characterController;
     private Vector3 velocity;
     
@@ -57,14 +64,14 @@ public class PlayerController : MonoBehaviour
     private float coyoteTimeCounter;
     private float slideCooldownCounter;
     private float wallJumpCooldownTimer;
-    private float dashCooldownCounter; // Новый таймер кулдауна деша
+    private float dashCooldownCounter;
     
     // States
     private bool wasGroundedLastFrame;
     private Vector3 moveDirection;
     
-    // Dash & General Momentum
-    private Vector3 bufferMoveDir; // Сохраняет вектор движения до рывка
+    // Momentum System
+    private Vector3 bufferMoveDir; // Флаг и хранилище скорости для деша
     private bool hasMomentum;
     private Vector3 momentumVelocity;
     private float momentumTimer;
@@ -72,7 +79,7 @@ public class PlayerController : MonoBehaviour
     // Wall Logic
     private Vector3 wallNormal = Vector3.zero;
     private Vector3 wallJumpMomentum = Vector3.zero;
-    private bool hasJumpedFromWall = false; // Новое поле: отслеживает, был ли прыжок от стены после отрыва от земли
+    private bool hasJumpedFromWall = false;
 
     // Slide Logic
     private bool isSliding;
@@ -119,114 +126,49 @@ public class PlayerController : MonoBehaviour
         slideAction.action.performed -= OnSlidePerformed;
     }
 
-        void Update()
+    void Update()
     {
         UpdateTimers();
         HandleWallCheck();
 
-        // Если мы не в состоянии рывка (Dash), управляем движением
+        // Блокируем управление движением во время деша
         if (bufferMoveDir == Vector3.zero)
         {
             HandleMovement();
         }
 
         HandleJump();
-        HandleSlide(); // Логика подката (только на земле)
+        HandleSlide(); 
         ApplyGravity();
 
-        // Сохраняем предыдущее состояние grounded
         wasGroundedLastFrame = characterController.isGrounded;
 
-        // Перемещение
-        Vector3 displacement = velocity * Time.deltaTime;
-        // Перемещаем и получаем результат столкновения
-        CollisionFlags collisionFlags = characterController.Move(displacement);
-
-        // Проверяем, столкнулись ли мы с чем-то сверху
-        if ((collisionFlags & CollisionFlags.Above) != 0)
-        {
-            // Если столкнулись сверху и поднимаемся, обнуляем вертикальную скорость
-            if (velocity.y > 0)
-            {
-                velocity.y = 0;
-            }
-        }
-        // Проверяем, столкнулись ли мы с чем-то снизу (но не сбоку, чтобы не ломать скольжение)
-        // Это может быть полезно при приземлении, но нужно быть осторожным
-        // CharacterController автоматически устанавливает isGrounded, если мы на земле
+        // Финальное применение движения
+        CollisionFlags flags = characterController.Move(velocity * Time.deltaTime);
+        HandleCollisionFlags(flags);
     }
 
-    void ApplyGravity()
+    // Обработка ударов головой о потолок
+    void HandleCollisionFlags(CollisionFlags flags)
     {
-        bool isSlidingOnWall = wallNormal != Vector3.zero && !characterController.isGrounded;
-
-        // Пропускаем гравитацию, если сейчас деш
-        if (bufferMoveDir != Vector3.zero) return;
-
-        // 1. На земле
-        if (characterController.isGrounded && velocity.y <= 0)
+        if ((flags & CollisionFlags.Above) != 0)
         {
-            velocity.y = -2f; // Прижимаем к земле
-            // Сбрасываем флаг отскока при приземлении
-            hasJumpedFromWall = false;
-        }
-        // 2. На стене (Wall Slide) - если не в рывке и не в кулдауне отскока
-        else if (isSlidingOnWall && wallJumpCooldownTimer <= 0 && !hasJumpedFromWall)
-        {
-            velocity.y += gravity * Time.deltaTime;
-            // Ограничиваем скорость падения (скольжение)
-            if (velocity.y < wallSlideSpeed)
-            {
-                velocity.y = wallSlideSpeed;
-            }
-        }
-        // 3. В воздухе
-        else
-        {
-            velocity.y += gravity * Time.deltaTime;
-        }
-    }
-
-    // Добавляем метод для обработки столкновений
-    void OnControllerColliderHit(ControllerColliderHit hit)
-    {
-        // Проверяем, столкнулись ли мы сверху
-        if (Vector3.Angle(hit.normal, Vector3.down) < 45f) // угол между нормалью и вектором вниз
-        {
-            if (velocity.y > 0) // если движемся вверх
-            {
-                velocity.y = 0; // обнуляем вертикальную скорость
-            }
-        }
-        // Проверяем, столкнулись ли мы снизу (например, при прыжке под потолок)
-        else if (Vector3.Angle(hit.normal, Vector3.up) < 45f)
-        {
-            if (velocity.y < 0) // если движемся вниз
-            {
-                velocity.y = 0; // обнуляем вертикальную скорость
-            }
+            if (velocity.y > 0) velocity.y = 0;
         }
     }
 
     void UpdateTimers()
     {
-        // Jump Buffering
         if (jumpBufferCounter > 0) jumpBufferCounter -= Time.deltaTime;
-
-        // Wall Jump Cooldown
         if (wallJumpCooldownTimer > 0) wallJumpCooldownTimer -= Time.deltaTime;
-
-        // Dash Cooldown
         if (dashCooldownCounter > 0) dashCooldownCounter -= Time.deltaTime;
+        if (slideCooldownCounter > 0) slideCooldownCounter -= Time.deltaTime;
 
-        // Coyote Time
         if (characterController.isGrounded)
         {
             coyoteTimeCounter = coyoteTime;
-            // Сбрасываем инерцию от стены, если коснулись земли
             wallJumpMomentum = Vector3.zero;
             wallNormal = Vector3.zero;
-            // Сбрасываем флаг отскока при приземлении
             hasJumpedFromWall = false;
         }
         else if (wasGroundedLastFrame)
@@ -234,10 +176,7 @@ public class PlayerController : MonoBehaviour
             coyoteTimeCounter -= Time.deltaTime;
         }
 
-        // Slide Cooldown
-        if (slideCooldownCounter > 0) slideCooldownCounter -= Time.deltaTime;
-
-        // General Momentum Decay (Dash exit / Slide exit)
+        // Затухание общей инерции (включая внешний импульс)
         if (hasMomentum && momentumTimer > 0)
         {
             momentumTimer -= Time.deltaTime;
@@ -248,148 +187,147 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- WALL CHECK LOGIC ---
-    void HandleWallCheck()
+    // --- НОВОЕ: Внешний импульс (из Скрипта 3) ---
+    /// <summary>
+    /// Позволяет отбросить игрока (взрыв, джамп-пад, отдача оружия)
+    /// </summary>
+    public void AddExternalImpulse(Vector3 impulse)
     {
-        wallNormal = Vector3.zero;
+        // 1. Применяем импульс к текущей скорости (сразу работает для Y)
+        velocity += impulse;
 
-        // Мы не ищем стену, если мы на земле (чтобы не липнуть к плинтусам)
-        if (characterController.isGrounded) return;
-
-        // Не проверяем стену, если уже использовали отскок после прыжка
-        if (hasJumpedFromWall) return;
-
-        RaycastHit hit;
-        Vector3 origin = transform.position;
-        float radius = characterController.radius; // Используем радиус контроллера
-
-        // Направление проверки зависит от ввода игрока
-        Vector3 checkDirection = transform.forward;
-        Vector2 input = movementAction.action.ReadValue<Vector2>();
-        if (input.magnitude > 0.1f)
+        // 2. Чтобы импульс по X/Z не исчез в следующем кадре из-за HandleMovement,
+        // мы "скармливаем" его системе инерции.
+        if (Mathf.Abs(impulse.x) > 1f || Mathf.Abs(impulse.z) > 1f)
         {
-            Vector3 inputDir = transform.right * input.x + transform.forward * input.y;
-            checkDirection = inputDir.normalized;
-        }
-
-        if (Physics.SphereCast(origin, radius, checkDirection, out hit, wallCheckDistance))
-        {
-            // Проверяем тег (если нужен)
-            if (!string.IsNullOrEmpty(wallTag) && !hit.collider.CompareTag(wallTag))
-            {
-                return;
-            }
-
-            // Проверяем угол (чтобы это была стена, а не пол или потолок)
-            float angle = Vector3.Angle(Vector3.up, hit.normal);
-            if (angle > 70f && angle < 110f) // Слегка расширил углы
-            {
-                // Если кулдаун после отскока прошел, фиксируем стену
-                if (wallJumpCooldownTimer <= 0)
-                {
-                    wallNormal = hit.normal;
-                }
-            }
+            hasMomentum = true;
+            momentumTimer = momentumDecayTime; // Можно настроить отдельное время затухания
+            momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
         }
     }
 
-    // --- MOVEMENT LOGIC ---
-        void HandleMovement()
+    // --- LOGIC: MOVEMENT ---
+    void HandleMovement()
     {
         Vector2 input = movementAction.action.ReadValue<Vector2>();
         moveDirection = transform.right * input.x + transform.forward * input.y;
 
-        // Приоритет 1: Инерция от Wall Jump (Script 2)
+        // Приоритет 1: Отскок от стены
         if (wallJumpMomentum.magnitude > 0.1f)
         {
-            // Вычисляем, как давно произошёл отскок (через оставшееся время импульса)
             float timeSinceJump = wallJumpMomentumDecay - Vector3.Distance(wallJumpMomentum, Vector3.zero) / wallJumpMomentumDecay;
-            float normalizedTime = timeSinceJump / wallJumpMomentumDecay;
-            
-            // Чем дольше прошло, тем больше контроль (от 0% до 100% за wallJumpMomentumDecay секунд)
-            float controlFactor = normalizedTime;
-            controlFactor = Mathf.Clamp01(controlFactor); // Ограничиваем от 0 до 1
+            float controlFactor = Mathf.Clamp01(timeSinceJump / wallJumpMomentumDecay);
 
-            // Применяем ввод с плавающим контролем
             if (input.magnitude > 0.1f)
             {
-                Vector3 inputWorldDir = moveDirection.normalized;
-                Vector3 targetVelocity = inputWorldDir * movementSpeed;
-
-                // Плавное изменение текущей скорости к целевой, с изменяющимся коэффициентом
-                float lerpSpeed = 4f * controlFactor; // Чем дольше прошло, тем больше влияние ввода
-                velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, lerpSpeed * Time.deltaTime);
-                velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, lerpSpeed * Time.deltaTime);
+                Vector3 targetVel = moveDirection * movementSpeed;
+                velocity.x = Mathf.Lerp(velocity.x, targetVel.x, 4f * controlFactor * Time.deltaTime);
+                velocity.z = Mathf.Lerp(velocity.z, targetVel.z, 4f * controlFactor * Time.deltaTime);
             }
             else
             {
-                // Без ввода: плавный переход от импульса к нулю
                 velocity.x = Mathf.Lerp(velocity.x, 0f, (1f - controlFactor) * 3f * Time.deltaTime);
                 velocity.z = Mathf.Lerp(velocity.z, 0f, (1f - controlFactor) * 3f * Time.deltaTime);
             }
+            
+            // Затухание импульса от стены
+            wallJumpMomentum = Vector3.MoveTowards(wallJumpMomentum, Vector3.zero, wallJumpMomentumDecay * Time.deltaTime);
         }
-        // Приоритет 2: Инерция после Dash или Slide (Script 1)
+        // Приоритет 2: Инерция (после деша, подката или ВНЕШНЕГО ИМПУЛЬСА)
         else if (hasMomentum && momentumTimer > 0)
         {
+            // Если игрок нажимает кнопки движения, мы плавно перехватываем контроль
             if (input.magnitude > 0.1f)
             {
-                // Игрок пытается двигаться, плавно переходим от инерции к вводу
                 Vector3 targetVelocity = moveDirection * movementSpeed;
-                float t = 1f - (momentumTimer / momentumDecayTime);
+                float t = 1f - (momentumTimer / momentumDecayTime); // t растет от 0 до 1
                 velocity.x = Mathf.Lerp(momentumVelocity.x, targetVelocity.x, t);
                 velocity.z = Mathf.Lerp(momentumVelocity.z, targetVelocity.z, t);
             }
             else
             {
-                // Игрок не жмет кнопки, просто замедляем инерцию
+                // Если ввода нет, просто замедляем импульс (трение)
                 float decayFactor = momentumTimer / momentumDecayTime;
                 velocity.x = momentumVelocity.x * decayFactor;
                 velocity.z = momentumVelocity.z * decayFactor;
             }
         }
-        // Приоритет 3: Обычное движение
+        // Приоритет 3: Обычный бег
         else
         {
-            // Горизонтальная скорость (x/z)
-            Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-
-            // Управление на земле — с ускорением и замедлением
             if (characterController.isGrounded && !isSliding)
             {
-                // Если есть ввод направления
-                if (input.magnitude > 0.1f)
-                {
-                    Vector3 targetVelocity = moveDirection * movementSpeed;
-
-                    // Плавное изменение скорости к целевой (ускорение)
-                    velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, 10f * Time.deltaTime);
-                    velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, 10f * Time.deltaTime);
-                }
-                else
-                {
-                    // Нет ввода — плавное замедление (скольжение)
-                    velocity.x = Mathf.Lerp(velocity.x, 0f, 8f * Time.deltaTime);
-                    velocity.z = Mathf.Lerp(velocity.z, 0f, 8f * Time.deltaTime);
-                }
+                Vector3 targetVelocity = (input.magnitude > 0.1f) ? moveDirection * movementSpeed : Vector3.zero;
+                float lerpRate = (input.magnitude > 0.1f) ? 10f : 8f; // Разгон vs Торможение
+                
+                velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, lerpRate * Time.deltaTime);
+                velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, lerpRate * Time.deltaTime);
             }
             else
             {
-                // В воздухе — изменение направления с ограниченной скоростью
-                if (input.magnitude > 0.1f)
-                {
-                    Vector3 inputWorldDir = moveDirection.normalized;
-                    Vector3 targetVelocity = inputWorldDir * movementSpeed;
-
-                    // Плавное изменение текущей скорости к целевой (меньший коэффициент для "тяжести" в воздухе)
-                    velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, 4f * Time.deltaTime);
-                    velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, 4f * Time.deltaTime);
-                }
-                // Если нет ввода в воздухе, скорость остается неизменной (или можно добавить большее затухание)
+                // В воздухе управление чуть более инертное
+                Vector3 targetVelocity = moveDirection * movementSpeed;
+                velocity.x = Mathf.Lerp(velocity.x, targetVelocity.x, 4f * Time.deltaTime);
+                velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, 4f * Time.deltaTime);
             }
         }
     }
 
-    // --- JUMP LOGIC ---
+    // --- LOGIC: DASH ---
+    void OnDashPerformed(InputAction.CallbackContext context)
+    {
+        if (dashCooldownCounter > 0) return;
+
+        Debug.Log("Attempting to Dash!"); // Лог из нового скрипта
+
+        bufferMoveDir = velocity; // Сохраняем вектор чтобы помнить, что мы в деше
+
+        Vector3 dashDirection;
+        // Если игрок на земле - деш по направлению движения
+        if (characterController.isGrounded)
+        {
+            dashDirection = (moveDirection == Vector3.zero) ? transform.forward : moveDirection.normalized;
+        }
+        // Если в воздухе - деш туда, куда смотрит камера
+        else
+        {
+            Vector2 inputVector = movementAction.action.ReadValue<Vector2>();
+            if (inputVector.magnitude == 0 && cameraRoot != null)
+            {
+                dashDirection = cameraRoot.forward;
+            }
+            else if (cameraRoot != null)
+            {
+                // Комбинируем ввод с направлением камеры
+                dashDirection = (cameraRoot.right * inputVector.x + cameraRoot.forward * inputVector.y).normalized;
+            }
+            else
+            {
+                dashDirection = transform.forward;
+            }
+            velocity.y = 0; // Отключаем гравитацию для прямого полета
+        }
+
+        velocity = dashDirection * dashSpeed;
+        dashCooldownCounter = dashCooldown;
+
+        StartCoroutine(ReturnToNormal(dashDuration));
+    }
+
+    IEnumerator ReturnToNormal(float duration)
+    {
+        yield return new WaitForSeconds(duration);
+
+        // Переходим в состояние инерции после деша
+        momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
+        hasMomentum = true;
+        momentumTimer = momentumDecayTime;
+
+        bufferMoveDir = Vector3.zero; // Снимаем флаг деша
+        Debug.Log("Back to normal"); // Лог из нового скрипта
+    }
+
+    // --- LOGIC: JUMP ---
     void OnJumpPerformed(InputAction.CallbackContext context)
     {
         jumpBufferCounter = jumpBufferTime;
@@ -404,131 +342,42 @@ public class PlayerController : MonoBehaviour
 
         if (jumpBufferCounter > 0)
         {
-            // 1. WALL JUMP (Приоритет выше, если мы в воздухе у стены)
             if (isWallSliding)
             {
-                // Текущая горизонтальная скорость перед отскоком
-                Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
+                // Wall Jump logic
+                Vector3 reflectDir = Vector3.Reflect(new Vector3(velocity.x, 0, velocity.z), wallNormal).normalized;
+                Vector3 jumpDir = (wallNormal + reflectDir).normalized; // Смесь нормали и отражения
                 
-                // Отражаем горизонтальную скорость относительно нормали стены
-                Vector3 reflectedHorizontalVelocity = Vector3.Reflect(currentHorizontalVelocity, wallNormal);
+                float vForce = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
                 
-                // Вертикальная сила (только вверх)
-                float wallJumpVForce = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
-                
-                // Применяем силу отскока к отраженной горизонтальной скорости
-                Vector3 wallJumpHorizontalVelocity = reflectedHorizontalVelocity.normalized * wallJumpForce;
-                
-                // Итоговая скорость: горизонтальная сила отскока + вертикальная сила прыжка
-                velocity = new Vector3(wallJumpHorizontalVelocity.x, wallJumpVForce, wallJumpHorizontalVelocity.z);
+                // Применяем силу
+                wallJumpMomentum = jumpDir * wallJumpForce;
+                velocity = new Vector3(wallJumpMomentum.x, vForce, wallJumpMomentum.z);
 
-                // Горизонтальный импульс (для последующего контроля)
-                wallJumpMomentum = wallJumpHorizontalVelocity;
-
-                // Устанавливаем флаг, что отскок был использован
                 hasJumpedFromWall = true;
-
-                // Кулдаун, чтобы сразу не прилипнуть обратно
                 wallJumpCooldownTimer = wallJumpCooldownTime;
-
-                // Сброс
                 jumpBufferCounter = 0f;
-                coyoteTimeCounter = 0f;
-                wallNormal = Vector3.zero; 
-                
-                // Если был подкат, прерываем его
+                wallNormal = Vector3.zero;
                 if (isSliding) EndSlide();
             }
-            // 2. GROUND JUMP
             else if (canGroundJump)
             {
-                float baseJumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
-
-                float totalJumpForce = baseJumpForce;
-                velocity.y = totalJumpForce;
-                
+                // Ground Jump logic
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);
                 jumpBufferCounter = 0f;
                 coyoteTimeCounter = 0f;
-
-                // Прыжок прерывает подкат
                 if (isSliding) EndSlide();
             }
         }
     }
 
-    void OnDashPerformed(InputAction.CallbackContext context)
-    {
-        // Проверяем кулдаун деша
-        if (dashCooldownCounter > 0) return;
-
-        bufferMoveDir = velocity;
-
-        Vector3 dashDirection;
-
-        if(characterController.isGrounded)
-        {
-            dashDirection = moveDirection.normalized;
-        }
-        else
-        {
-            Vector2 inputVector = movementAction.action.ReadValue<Vector2>();
-            
-            if (inputVector.magnitude == 0)
-            {
-                dashDirection = cameraRoot.transform.forward;
-            }
-            else
-            {
-                Vector3 inputWorldDirection = inputVector.x * cameraRoot.transform.right + inputVector.y * cameraRoot.transform.forward;
-                dashDirection = inputWorldDirection.normalized;
-            }
-            
-            velocity.y = 0;
-        }
-
-        velocity = dashDirection.normalized * dashSpeed;
-
-        // Устанавливаем кулдаун деша
-        dashCooldownCounter = dashCooldown;
-
-        StartCoroutine(ReturnToNormal(dashDuration));
-    }
-
-    IEnumerator ReturnToNormal(float dashDuration)
-    {
-        yield return new WaitForSeconds(dashDuration);
-
-        // Возвращаем горизонтальную скорость до состояния до деша
-        velocity = new Vector3(bufferMoveDir.x, 0, bufferMoveDir.z);
-
-        // Сбрасываем флаг деша
-        bufferMoveDir = Vector3.zero;
-    }
-
-    // --- SLIDE LOGIC (Script 1) ---
+    // --- LOGIC: SLIDE (Ground Only) ---
     private void OnSlidePerformed(InputAction.CallbackContext context)
     {
-        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-        
-        // Подкат возможен только на земле, если есть скорость и прошел кулдаун
-        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f && slideCooldownCounter <= 0f)
+        Vector3 hVel = new Vector3(velocity.x, 0f, velocity.z);
+        if (characterController.isGrounded && !isSliding && hVel.magnitude > 0.1f && slideCooldownCounter <= 0f)
         {
             StartSlide();
-        }
-    }
-
-    private void HandleSlide()
-    {
-        if (!isSliding)
-        {
-            LerpHeightAndCameraBack();
-            return;
-        }
-
-        UpdateSlide();
-        if (slideTimer <= 0)
-        {
-            EndSlide();
         }
     }
 
@@ -537,42 +386,36 @@ public class PlayerController : MonoBehaviour
         isSliding = true;
         slideTimer = slideDuration;
         slideCooldownCounter = slideCooldown;
-
-        // Фиксируем направление подката
-        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-        slideDirection = currentHorizontalVelocity.normalized;
-
-        // Отключаем инерцию бега, включаем логику подката
-        hasMomentum = false;
-        momentumTimer = 0f;
+        slideDirection = new Vector3(velocity.x, 0f, velocity.z).normalized;
+        hasMomentum = false; // Сбрасываем обычную инерцию, используем логику подката
     }
 
-    private void UpdateSlide()
+    private void HandleSlide()
     {
+        if (!isSliding) { LerpHeightAndCameraBack(); return; }
+
         slideTimer -= Time.deltaTime;
+        if (slideTimer <= 0) { EndSlide(); return; }
 
-        // Расчет скорости подката с трением
-        float currentSlideSpeed = slideSpeed - (slideFriction * (slideDuration - slideTimer));
-        currentSlideSpeed = Mathf.Max(currentSlideSpeed, movementSpeed * 0.5f); // Не замедляться до 0 совсем
+        // Трение при подкате
+        float speed = slideSpeed - (slideFriction * (slideDuration - slideTimer));
+        speed = Mathf.Max(speed, movementSpeed * 0.5f);
+        
+        velocity.x = slideDirection.x * speed;
+        velocity.z = slideDirection.z * speed;
 
-        velocity.x = slideDirection.x * currentSlideSpeed;
-        velocity.z = slideDirection.z * currentSlideSpeed;
-
-        // Изменение высоты и камеры
         characterController.height = Mathf.Lerp(characterController.height, slideHeight, heightLerpSpeed * Time.deltaTime);
-
         if (cameraRoot != null)
         {
-            Vector3 targetCameraPos = originalCameraLocalPos + new Vector3(0f, cameraSlideOffset, 0f);
-            cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, targetCameraPos, heightLerpSpeed * Time.deltaTime);
+            Vector3 targetPos = originalCameraLocalPos + Vector3.up * cameraSlideOffset;
+            cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, targetPos, heightLerpSpeed * Time.deltaTime);
         }
     }
 
     private void EndSlide()
     {
         isSliding = false;
-
-        // Переносим скорость подката в инерцию
+        // Сохраняем скорость выхода из подката как инерцию
         momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
         hasMomentum = true;
         momentumTimer = momentumDecayTime;
@@ -580,23 +423,53 @@ public class PlayerController : MonoBehaviour
 
     private void LerpHeightAndCameraBack()
     {
-        // Плавный возврат высоты и камеры
         if (Mathf.Abs(characterController.height - originalHeight) > 0.01f)
-        {
             characterController.height = Mathf.Lerp(characterController.height, originalHeight, heightLerpSpeed * Time.deltaTime);
-        }
-
+        
         if (cameraRoot != null && Vector3.Distance(cameraRoot.localPosition, originalCameraLocalPos) > 0.01f)
-        {
             cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, originalCameraLocalPos, heightLerpSpeed * Time.deltaTime);
+    }
+
+    // --- LOGIC: WALL CHECK & GRAVITY ---
+    void HandleWallCheck()
+    {
+        wallNormal = Vector3.zero;
+        if (characterController.isGrounded || hasJumpedFromWall) return;
+
+        Vector3 input = new Vector3(movementAction.action.ReadValue<Vector2>().x, 0, movementAction.action.ReadValue<Vector2>().y);
+        Vector3 checkDir = (input.magnitude > 0.1f) ? (transform.right * input.x + transform.forward * input.z).normalized : transform.forward;
+
+        if (Physics.SphereCast(transform.position, characterController.radius, checkDir, out RaycastHit hit, wallCheckDistance))
+        {
+            if (!string.IsNullOrEmpty(wallTag) && !hit.collider.CompareTag(wallTag)) return;
+            
+            float angle = Vector3.Angle(Vector3.up, hit.normal);
+            if (angle > 70f && angle < 110f && wallJumpCooldownTimer <= 0)
+            {
+                wallNormal = hit.normal;
+            }
         }
     }
 
-    // --- GRAVITY LOGIC (Merged) ---
-    
-    void OnCollisionEnter(Collision collision)
+    void ApplyGravity()
     {
-        if (bufferMoveDir != Vector3.zero)
-            velocity = Vector3.zero;
+        // Если деш активен - гравитацию отключаем
+        if (bufferMoveDir != Vector3.zero) return;
+
+        bool onWall = wallNormal != Vector3.zero && !characterController.isGrounded && !hasJumpedFromWall;
+
+        if (characterController.isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+        else if (onWall && velocity.y < 0) // Скольжение по стене только вниз
+        {
+            velocity.y += gravity * Time.deltaTime;
+            if (velocity.y < wallSlideSpeed) velocity.y = wallSlideSpeed;
+        }
+        else
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
     }
 }
