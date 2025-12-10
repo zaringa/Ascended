@@ -10,6 +10,9 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private InputActionReference dashAction;
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private InputActionReference slideAction;
+    [SerializeField] private CooldownBarUI dashCooldownBarUI;
+    [SerializeField] private CooldownBarUI slideCooldownBarUI;
+    [SerializeField] private CooldownBarUI wallJumpCooldownBarUI;
 
     [Header("Movement settings")]
     [SerializeField] private float movementSpeed = 5f;
@@ -24,7 +27,7 @@ public class PlayerController : MonoBehaviour
     [Header("Dash settings")]
     [SerializeField] private float dashSpeed = 200.0f;
     [SerializeField] private float dashDuration = .06f;
-    [SerializeField] private float dashCooldown = 0.5f; // Время кулдауна деша
+    [SerializeField] private float dashBaseCooldown = 5.0f;
 
     [Header("Slide settings")]
     [SerializeField] private float slideDuration = 0.5f;
@@ -34,19 +37,24 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float cameraSlideOffset = -0.5f;
     [SerializeField] private float heightLerpSpeed = 10f;
     [SerializeField] private Transform cameraRoot;
-    [SerializeField] private float slideCooldown = 1.0f;
+    [SerializeField] private float slideBaseCooldown = 5.0f;
 
     [Header("Rebound settings")]
     [SerializeField] private float wallCheckDistance = 0.6f;
-    [SerializeField] private string wallTag = "Wall"; //! При использовании отскока убедитесь, что есть этот тег
-    [SerializeField] private float wallSlideSpeed = -1f; // Скорость сползания
-    [SerializeField] private float wallJumpHeight = 3f; // Высота отскока
-    [SerializeField] private float wallJumpForce = 10f; // Сила отталкивания от стены
-    [SerializeField] private float wallJumpMomentumDecay = 2f; // Скорость затухания импульса от стены
-    [SerializeField] private float wallJumpCooldownTime = 0.2f; // Время, когда нельзя прилипнуть к стене после отскока
+    [SerializeField] private string wallTag = "Wall";
+    [SerializeField] private float wallSlideSpeed = -1f;
+    [SerializeField] private float wallJumpHeight = 3f;
+    [SerializeField] private float wallJumpForce = 10f;
+    [SerializeField] private float wallJumpMomentumDecay = 2f;
+    [SerializeField] private float wallJumpBaseCooldownTime = 5.0f;
 
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
+
+    // Cooldown Systems
+    private CooldownSystem dashCooldownSystem;
+    private CooldownSystem slideCooldownSystem;
+    private CooldownSystem wallJumpCooldownSystem;
 
     // Private Variables
     private CharacterController characterController;
@@ -55,16 +63,13 @@ public class PlayerController : MonoBehaviour
     // Timers
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
-    private float slideCooldownCounter;
-    private float wallJumpCooldownTimer;
-    private float dashCooldownCounter; // Новый таймер кулдауна деша
     
     // States
     private bool wasGroundedLastFrame;
     private Vector3 moveDirection;
     
     // Dash & General Momentum
-    private Vector3 bufferMoveDir; // Сохраняет вектор движения до рывка
+    private Vector3 bufferMoveDir;
     private bool hasMomentum;
     private Vector3 momentumVelocity;
     private float momentumTimer;
@@ -72,7 +77,7 @@ public class PlayerController : MonoBehaviour
     // Wall Logic
     private Vector3 wallNormal = Vector3.zero;
     private Vector3 wallJumpMomentum = Vector3.zero;
-    private bool hasJumpedFromWall = false; // Новое поле: отслеживает, был ли прыжок от стены после отрыва от земли
+    private bool hasJumpedFromWall = false;
 
     // Slide Logic
     private bool isSliding;
@@ -89,6 +94,15 @@ public class PlayerController : MonoBehaviour
         {
             originalCameraLocalPos = cameraRoot.localPosition;
         }
+
+        // Initialize Cooldown Systems
+        dashCooldownSystem = new CooldownSystem(dashBaseCooldown);
+        slideCooldownSystem = new CooldownSystem(slideBaseCooldown);
+        wallJumpCooldownSystem = new CooldownSystem(wallJumpBaseCooldownTime);
+
+        dashCooldownBarUI.cooldownSystem = dashCooldownSystem;
+        slideCooldownBarUI.cooldownSystem = slideCooldownSystem;
+        wallJumpCooldownBarUI.cooldownSystem = wallJumpCooldownSystem;
     }
 
     void OnEnable()
@@ -119,41 +133,41 @@ public class PlayerController : MonoBehaviour
         slideAction.action.performed -= OnSlidePerformed;
     }
 
-        void Update()
+    void Update()
     {
+        // Update cooldown systems
+        dashCooldownSystem.UpdateCooldown(Time.deltaTime);
+        slideCooldownSystem.UpdateCooldown(Time.deltaTime);
+        wallJumpCooldownSystem.UpdateCooldown(Time.deltaTime);
+
+        dashCooldownBarUI.cooldownSystem = dashCooldownSystem;
+        slideCooldownBarUI.cooldownSystem = slideCooldownSystem;
+        wallJumpCooldownBarUI.cooldownSystem = wallJumpCooldownSystem;
+
         UpdateTimers();
         HandleWallCheck();
 
-        // Если мы не в состоянии рывка (Dash), управляем движением
         if (bufferMoveDir == Vector3.zero)
         {
             HandleMovement();
         }
 
         HandleJump();
-        HandleSlide(); // Логика подката (только на земле)
+        HandleSlide();
         ApplyGravity();
 
-        // Сохраняем предыдущее состояние grounded
         wasGroundedLastFrame = characterController.isGrounded;
 
-        // Перемещение
         Vector3 displacement = velocity * Time.deltaTime;
-        // Перемещаем и получаем результат столкновения
         CollisionFlags collisionFlags = characterController.Move(displacement);
 
-        // Проверяем, столкнулись ли мы с чем-то сверху
         if ((collisionFlags & CollisionFlags.Above) != 0)
         {
-            // Если столкнулись сверху и поднимаемся, обнуляем вертикальную скорость
             if (velocity.y > 0)
             {
                 velocity.y = 0;
             }
         }
-        // Проверяем, столкнулись ли мы с чем-то снизу (но не сбоку, чтобы не ломать скольжение)
-        // Это может быть полезно при приземлении, но нужно быть осторожным
-        // CharacterController автоматически устанавливает isGrounded, если мы на земле
     }
 
     void ApplyGravity()
@@ -171,7 +185,7 @@ public class PlayerController : MonoBehaviour
             hasJumpedFromWall = false;
         }
         // 2. На стене (Wall Slide) - если не в рывке и не в кулдауне отскока
-        else if (isSlidingOnWall && wallJumpCooldownTimer <= 0 && !hasJumpedFromWall)
+        else if (isSlidingOnWall && !wallJumpCooldownSystem.IsOnCooldown && !hasJumpedFromWall)
         {
             velocity.y += gravity * Time.deltaTime;
             // Ограничиваем скорость падения (скольжение)
@@ -213,12 +227,6 @@ public class PlayerController : MonoBehaviour
         // Jump Buffering
         if (jumpBufferCounter > 0) jumpBufferCounter -= Time.deltaTime;
 
-        // Wall Jump Cooldown
-        if (wallJumpCooldownTimer > 0) wallJumpCooldownTimer -= Time.deltaTime;
-
-        // Dash Cooldown
-        if (dashCooldownCounter > 0) dashCooldownCounter -= Time.deltaTime;
-
         // Coyote Time
         if (characterController.isGrounded)
         {
@@ -233,9 +241,6 @@ public class PlayerController : MonoBehaviour
         {
             coyoteTimeCounter -= Time.deltaTime;
         }
-
-        // Slide Cooldown
-        if (slideCooldownCounter > 0) slideCooldownCounter -= Time.deltaTime;
 
         // General Momentum Decay (Dash exit / Slide exit)
         if (hasMomentum && momentumTimer > 0)
@@ -285,7 +290,7 @@ public class PlayerController : MonoBehaviour
             if (angle > 70f && angle < 110f) // Слегка расширил углы
             {
                 // Если кулдаун после отскока прошел, фиксируем стену
-                if (wallJumpCooldownTimer <= 0)
+                if (!wallJumpCooldownSystem.IsOnCooldown)
                 {
                     wallNormal = hit.normal;
                 }
@@ -405,8 +410,9 @@ public class PlayerController : MonoBehaviour
         if (jumpBufferCounter > 0)
         {
             // 1. WALL JUMP (Приоритет выше, если мы в воздухе у стены)
-            if (isWallSliding)
+            if (isWallSliding && !wallJumpCooldownSystem.IsOnCooldown)
             {
+                wallJumpCooldownSystem.ActivateCooldown();
                 // Текущая горизонтальная скорость перед отскоком
                 Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
                 
@@ -427,9 +433,6 @@ public class PlayerController : MonoBehaviour
 
                 // Устанавливаем флаг, что отскок был использован
                 hasJumpedFromWall = true;
-
-                // Кулдаун, чтобы сразу не прилипнуть обратно
-                wallJumpCooldownTimer = wallJumpCooldownTime;
 
                 // Сброс
                 jumpBufferCounter = 0f;
@@ -459,7 +462,8 @@ public class PlayerController : MonoBehaviour
     void OnDashPerformed(InputAction.CallbackContext context)
     {
         // Проверяем кулдаун деша
-        if (dashCooldownCounter > 0) return;
+        if (dashCooldownSystem.IsOnCooldown) return; 
+        dashCooldownSystem.ActivateCooldown();
 
         bufferMoveDir = velocity;
 
@@ -488,9 +492,6 @@ public class PlayerController : MonoBehaviour
 
         velocity = dashDirection.normalized * dashSpeed;
 
-        // Устанавливаем кулдаун деша
-        dashCooldownCounter = dashCooldown;
-
         StartCoroutine(ReturnToNormal(dashDuration));
     }
 
@@ -508,10 +509,13 @@ public class PlayerController : MonoBehaviour
     // --- SLIDE LOGIC (Script 1) ---
     private void OnSlidePerformed(InputAction.CallbackContext context)
     {
+        if (slideCooldownSystem.IsOnCooldown) return;
+        slideCooldownSystem.ActivateCooldown();
+
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
         
         // Подкат возможен только на земле, если есть скорость и прошел кулдаун
-        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f && slideCooldownCounter <= 0f)
+        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f && slideCooldownSystem.IsOnCooldown)
         {
             StartSlide();
         }
@@ -536,7 +540,6 @@ public class PlayerController : MonoBehaviour
     {
         isSliding = true;
         slideTimer = slideDuration;
-        slideCooldownCounter = slideCooldown;
 
         // Фиксируем направление подката
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
