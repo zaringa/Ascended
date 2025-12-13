@@ -202,6 +202,7 @@ GameObject:
   - component: {fileID: 4915075397918742383}
   - component: {fileID: 1917141404353324656}
   - component: {fileID: 5488502794779278579}
+  - component: {fileID: 3378246951903598913}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -345,6 +346,9 @@ MonoBehaviour:
   dashAction: {fileID: -6192597183114217218, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   jumpAction: {fileID: -6000595813187283402, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   slideAction: {fileID: 3661101364445421467, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  dashCooldownBarUI: {fileID: 0}
+  slideCooldownBarUI: {fileID: 0}
+  wallJumpCooldownBarUI: {fileID: 0}
   movementSpeed: 9
   momentumDecayTime: 1
   allowJump: 1
@@ -353,20 +357,41 @@ MonoBehaviour:
   coyoteTime: 0.1
   dashSpeed: 30
   dashDuration: 0.25
-  dashCooldown: 4
-  slideDuration: 1
-  slideSpeed: 15
-  slideFriction: 7.35
+  dashBaseCooldown: 5
+  slideDuration: 2
+  slideSpeedBonus: 15
+  slideBoostBuildupTime: 0.1
   slideHeight: 1
   cameraSlideOffset: -0.1
   heightLerpSpeed: 20
   cameraRoot: {fileID: 396205174923786876}
-  slideCooldown: 1.5
+  slideBaseCooldown: 5
   wallCheckDistance: 0.6
   wallTag: Wall
-  wallSlideSpeed: -5
+  wallSlideSpeed: -9
   wallJumpHeight: 3
   wallJumpForce: 15
   wallJumpMomentumDecay: 5
-  wallJumpCooldownTime: 0.2
+  wallJumpBaseCooldownTime: 5
   gravity: -14.715
+  defaultFOV: 60
+  maxFOV: 90
+  fovSafeZoneSpeed: 0.1
+  fovSpeedSensitivity: 2
+--- !u!114 &3378246951903598913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8836365634834088470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 687dbd6e475cb59449e5e88ee46147a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Player.Inventory.Inventory
+  armsImplant: {fileID: 0}
+  bodyImplant: {fileID: 0}
+  legsImplant: {fileID: 0}
+  primaryWeapon: {fileID: 0}
+  secondaryWeapon: {fileID: 0}
