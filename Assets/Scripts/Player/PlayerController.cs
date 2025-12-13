@@ -31,8 +31,8 @@ public class PlayerController : MonoBehaviour
 
     [Header("Slide settings")]
     [SerializeField] private float slideDuration = 0.5f;
-    [SerializeField] private float slideSpeed = 12f;
-    [SerializeField] private float slideFriction = 10f;
+    [SerializeField] private float slideSpeedBonus = 8f;
+    [SerializeField] private float slideBoostBuildupTime = 0.1f;
     [SerializeField] private float slideHeight = 1f;
     [SerializeField] private float cameraSlideOffset = -0.5f;
     [SerializeField] private float heightLerpSpeed = 10f;
@@ -51,6 +51,16 @@ public class PlayerController : MonoBehaviour
     [Header("Gravity")]
     [SerializeField] private float gravity = -9.81f;
 
+    // === FOV CONTROL ===
+    [Header("Camera FOV Settings")]
+    [SerializeField] private float baseFOV = 60f;              // Базовый FOV из настроек игрока
+    [SerializeField] private float fovMultiplier = 2f;         // Множитель: maxFOV = baseFOV * fovMultiplier
+    [SerializeField] private float fovSafeZoneSpeed = 5f;      // Ниже этой скорости FOV не меняется
+    [SerializeField] private float maxSpeedForFOV = 30f;       // При этой скорости достигается max FOV
+
+    // Private References
+    private Camera mainCamera;
+
     // Cooldown Systems
     private CooldownSystem dashCooldownSystem;
     private CooldownSystem slideCooldownSystem;
@@ -67,6 +77,8 @@ public class PlayerController : MonoBehaviour
     // States
     private bool wasGroundedLastFrame;
     private Vector3 moveDirection;
+    private Vector3 previousPosition;
+    private float previousSpeed;
     
     // Dash & General Momentum
     private Vector3 bufferMoveDir;
@@ -82,9 +94,31 @@ public class PlayerController : MonoBehaviour
     // Slide Logic
     private bool isSliding;
     private float slideTimer;
-    private Vector3 slideDirection;
+    private Vector3 slideBoost = Vector3.zero;
     private float originalHeight;
     private Vector3 originalCameraLocalPos;
+
+    public float CurrentSpeed
+    {
+        get
+        {
+            // Получаем фактическое перемещение за кадр
+            Vector3 currentVelocity = (transform.position - previousPosition) / Time.deltaTime;
+            // Убираем вертикальную составляющую, так как нас интересует только горизонтальная скорость
+            currentVelocity.y = 0;
+            
+            float currentSpeed = currentVelocity.magnitude;
+            
+            // Сглаживаем скорость от кадра к кадру
+            if (Time.deltaTime > 0)
+            {
+                currentSpeed = Mathf.Lerp(previousSpeed, currentSpeed, Time.deltaTime * 10f);
+            }
+            
+            previousSpeed = currentSpeed;
+            return currentSpeed;
+        }
+    }
 
     void Awake()
     {
@@ -93,6 +127,24 @@ public class PlayerController : MonoBehaviour
         if (cameraRoot != null)
         {
             originalCameraLocalPos = cameraRoot.localPosition;
+
+            // Try to get Camera — directly or in children
+            if (!cameraRoot.TryGetComponent<Camera>(out mainCamera))
+            {
+                mainCamera = cameraRoot.GetComponentInChildren<Camera>();
+            }
+
+            // Если не нашли — попытка на самом Player (на случай, если cameraRoot не задан)
+            if (mainCamera == null && !TryGetComponent<Camera>(out mainCamera))
+            {
+                mainCamera = GetComponentInChildren<Camera>();
+            }
+
+            if (mainCamera != null)
+            {
+                // Инициализируем FOV
+                mainCamera.fieldOfView = baseFOV;
+            }
         }
 
         // Initialize Cooldown Systems
@@ -135,6 +187,9 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
+        // Обновляем предыдущую позицию в начале кадра
+        previousPosition = transform.position;
+
         // Update cooldown systems
         dashCooldownSystem.UpdateCooldown(Time.deltaTime);
         slideCooldownSystem.UpdateCooldown(Time.deltaTime);
@@ -168,6 +223,31 @@ public class PlayerController : MonoBehaviour
                 velocity.y = 0;
             }
         }
+
+        // === FOV UPDATE ===
+        UpdateCameraFOV();
+    }
+
+    void UpdateCameraFOV()
+    {
+        if (mainCamera == null) return;
+
+        float speed = CurrentSpeed;
+
+        float fov;
+        if (speed <= fovSafeZoneSpeed)
+        {
+            fov = baseFOV;
+        }
+        else
+        {
+            float clampedSpeed = Mathf.Clamp(speed, fovSafeZoneSpeed, maxSpeedForFOV);
+            float t = (clampedSpeed - fovSafeZoneSpeed) / (maxSpeedForFOV - fovSafeZoneSpeed);
+            fov = Mathf.Lerp(baseFOV, baseFOV * fovMultiplier, t);
+        }
+
+        // Плавное изменение FOV
+        mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, fov, 10f * Time.deltaTime);
     }
 
     void ApplyGravity()
@@ -299,18 +379,43 @@ public class PlayerController : MonoBehaviour
     }
 
     // --- MOVEMENT LOGIC ---
-        void HandleMovement()
+    void HandleMovement()
     {
         Vector2 input = movementAction.action.ReadValue<Vector2>();
+
+        // --- Изменения для слайда ---
+        if (isSliding)
+        {
+            // Принудительно устанавливаем "движение вперед", как при зажатой W
+            input.y = 1f;
+            // Блокируем движение назад (S)
+            if (input.y < 0f) input.y = 1f;
+        }
+        // ----------------------------
+
         moveDirection = transform.right * input.x + transform.forward * input.y;
 
+        // Приоритет 0: Инерция от слайда (если есть)
+        if (slideBoost.magnitude > 0.1f)
+        {
+            // Применяем буст к скорости
+            velocity += slideBoost * Time.deltaTime;
+
+            // Если ввод направлен против движения, уменьшаем буст быстрее
+            Vector3 inputWorldDir = transform.right * input.x + transform.forward * input.y;
+
+            if (Vector3.Dot(inputWorldDir.normalized, slideBoost.normalized) < -0.5f)
+            {
+                slideBoost = Vector3.Lerp(slideBoost, Vector3.zero, 5f * Time.deltaTime);
+            }
+        }
         // Приоритет 1: Инерция от Wall Jump (Script 2)
         if (wallJumpMomentum.magnitude > 0.1f)
         {
             // Вычисляем, как давно произошёл отскок (через оставшееся время импульса)
             float timeSinceJump = wallJumpMomentumDecay - Vector3.Distance(wallJumpMomentum, Vector3.zero) / wallJumpMomentumDecay;
             float normalizedTime = timeSinceJump / wallJumpMomentumDecay;
-            
+
             // Чем дольше прошло, тем больше контроль (от 0% до 100% за wallJumpMomentumDecay секунд)
             float controlFactor = normalizedTime;
             controlFactor = Mathf.Clamp01(controlFactor); // Ограничиваем от 0 до 1
@@ -413,6 +518,7 @@ public class PlayerController : MonoBehaviour
             if (isWallSliding && !wallJumpCooldownSystem.IsOnCooldown)
             {
                 wallJumpCooldownSystem.ActivateCooldown();
+                if (slideBoost.magnitude > 0.1f) slideBoost = Vector3.zero;
                 // Текущая горизонтальная скорость перед отскоком
                 Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
                 
@@ -510,13 +616,13 @@ public class PlayerController : MonoBehaviour
     private void OnSlidePerformed(InputAction.CallbackContext context)
     {
         if (slideCooldownSystem.IsOnCooldown) return;
-        slideCooldownSystem.ActivateCooldown();
 
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
         
         // Подкат возможен только на земле, если есть скорость и прошел кулдаун
-        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f && slideCooldownSystem.IsOnCooldown)
+        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f)
         {
+            slideCooldownSystem.ActivateCooldown();
             StartSlide();
         }
     }
@@ -525,12 +631,18 @@ public class PlayerController : MonoBehaviour
     {
         if (!isSliding)
         {
+            // Плавное затухание слайд-буста на земле
+            if (characterController.isGrounded && slideBoost.magnitude > 0.1f)
+            {
+                slideBoost = Vector3.Lerp(slideBoost, Vector3.zero, 2f * Time.deltaTime);
+            }
+            
             LerpHeightAndCameraBack();
             return;
         }
 
         UpdateSlide();
-        if (slideTimer <= 0)
+        if (slideTimer <= 0 || IsBlockedAbove())
         {
             EndSlide();
         }
@@ -541,27 +653,43 @@ public class PlayerController : MonoBehaviour
         isSliding = true;
         slideTimer = slideDuration;
 
-        // Фиксируем направление подката
-        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-        slideDirection = currentHorizontalVelocity.normalized;
+        // Получаем направление взгляда камеры, проецируем его на горизонтальную плоскость
+        Vector3 lookDir = cameraRoot.transform.forward;
+        lookDir.y = 0f; // проецируем на ground plane
+        if (lookDir.magnitude < 0.01f) // если почти вертикальный взгляд (вверх/вниз), используем forward персонажа как fallback
+        {
+            lookDir = transform.forward;
+            lookDir.y = 0f;
+        }
+        lookDir.Normalize();
 
-        // Отключаем инерцию бега, включаем логику подката
+        // Формируем slideBoost в направлении взгляда (по горизонтали)
+        slideBoost = lookDir * slideSpeedBonus;
+
+        // Немедленно применяем буст к скорости (для мгновенного эффекта)
+        velocity += slideBoost;
+
+        // Устанавливаем высоту и камеру
+        characterController.height = slideHeight;
+        if (cameraRoot != null)
+        {
+            Vector3 targetCameraPos = originalCameraLocalPos + new Vector3(0f, cameraSlideOffset, 0f);
+            cameraRoot.localPosition = targetCameraPos; // мгновенная установка, либо плавная — как у вас сейчас
+        }
+
+        // Отключаем другие виды инерции
         hasMomentum = false;
         momentumTimer = 0f;
     }
 
     private void UpdateSlide()
     {
-        slideTimer -= Time.deltaTime;
+        if (!(slideTimer < 0.1f && IsBlockedAbove()))
+        {
+            slideTimer -= Time.deltaTime;
+        }
 
-        // Расчет скорости подката с трением
-        float currentSlideSpeed = slideSpeed - (slideFriction * (slideDuration - slideTimer));
-        currentSlideSpeed = Mathf.Max(currentSlideSpeed, movementSpeed * 0.5f); // Не замедляться до 0 совсем
-
-        velocity.x = slideDirection.x * currentSlideSpeed;
-        velocity.z = slideDirection.z * currentSlideSpeed;
-
-        // Изменение высоты и камеры
+        // Плавное уменьшение высоты персонажа во время слайда
         characterController.height = Mathf.Lerp(characterController.height, slideHeight, heightLerpSpeed * Time.deltaTime);
 
         if (cameraRoot != null)
@@ -571,14 +699,25 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private bool IsBlockedAbove()
+    {
+        Vector3 rayStart = transform.position + Vector3.up * (originalHeight - slideHeight) / 2f;
+        float rayDistance = originalHeight / 2f + 0.1f;
+        
+        if (Physics.Raycast(rayStart, Vector3.up, rayDistance, ~0, QueryTriggerInteraction.Ignore))
+        {
+            return true;
+        }
+        return false;
+    }
+
     private void EndSlide()
     {
-        isSliding = false;
-
-        // Переносим скорость подката в инерцию
-        momentumVelocity = new Vector3(velocity.x, 0f, velocity.z);
-        hasMomentum = true;
-        momentumTimer = momentumDecayTime;
+        // Только завершаем слайд, если можем встать
+        if (!IsBlockedAbove())
+        {
+            isSliding = false;
+        }
     }
 
     private void LerpHeightAndCameraBack()
@@ -595,8 +734,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    // --- GRAVITY LOGIC (Merged) ---
-    
     void OnCollisionEnter(Collision collision)
     {
         if (bufferMoveDir != Vector3.zero)

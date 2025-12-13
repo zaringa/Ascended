@@ -10,7 +10,6 @@ public class CooldownBarUI : MonoBehaviour
         if (cooldownSystem != null && barUI != null)
         {
             barUI.SetFill(cooldownSystem.Percentage);
-            Debug.Log("" + cooldownSystem.Percentage);
         }
     }
 }
