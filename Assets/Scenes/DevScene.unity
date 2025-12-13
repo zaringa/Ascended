@@ -8692,10 +8692,6 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5488502794779278579, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
-      propertyPath: fovMultiplier
-      value: 1.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 5488502794779278579, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: dashCooldownBarUI
       value: 
       objectReference: {fileID: 2026668139}
@@ -8703,10 +8699,6 @@ PrefabInstance:
       propertyPath: slideCooldownBarUI
       value: 
       objectReference: {fileID: 426295883}
-    - target: {fileID: 5488502794779278579, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
-      propertyPath: fovSpeedSensitivity
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 5488502794779278579, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: wallJumpCooldownBarUI
       value: 

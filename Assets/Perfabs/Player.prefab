@@ -374,10 +374,10 @@ MonoBehaviour:
   wallJumpMomentumDecay: 5
   wallJumpBaseCooldownTime: 5
   gravity: -14.715
-  defaultFOV: 60
-  maxFOV: 90
+  baseFOV: 60
+  fovMultiplier: 1.5
   fovSafeZoneSpeed: 0.1
-  fovSpeedSensitivity: 2
+  maxSpeedForFOV: 30
 --- !u!114 &3378246951903598913
 MonoBehaviour:
   m_ObjectHideFlags: 0
