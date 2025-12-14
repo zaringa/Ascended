@@ -195,10 +195,6 @@ public class PlayerController : MonoBehaviour
         slideCooldownSystem.UpdateCooldown(Time.deltaTime);
         wallJumpCooldownSystem.UpdateCooldown(Time.deltaTime);
 
-        dashCooldownBarUI.cooldownSystem = dashCooldownSystem;
-        slideCooldownBarUI.cooldownSystem = slideCooldownSystem;
-        wallJumpCooldownBarUI.cooldownSystem = wallJumpCooldownSystem;
-
         UpdateTimers();
         HandleWallCheck();
 
@@ -510,7 +506,7 @@ public class PlayerController : MonoBehaviour
         if (!allowJump) return;
 
         bool isWallSliding = wallNormal != Vector3.zero && !characterController.isGrounded && !hasJumpedFromWall;
-        bool canGroundJump = characterController.isGrounded || coyoteTimeCounter > 0;
+        bool canGroundJump = characterController.isGrounded || (coyoteTimeCounter > 0 && !isSliding);
 
         if (jumpBufferCounter > 0)
         {
@@ -652,6 +648,8 @@ public class PlayerController : MonoBehaviour
     {
         isSliding = true;
         slideTimer = slideDuration;
+        jumpBufferCounter = 0f;
+        coyoteTimeCounter = 0f;
 
         // Получаем направление взгляда камеры, проецируем его на горизонтальную плоскость
         Vector3 lookDir = cameraRoot.transform.forward;
