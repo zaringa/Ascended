@@ -3973,7 +3973,7 @@ SphereCollider:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
@@ -8116,7 +8116,7 @@ SphereCollider:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 8
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
   m_ProvidesContacts: 0
@@ -9173,6 +9173,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2718152606309596229, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 5488502794779278579, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: dashCooldownBarUI
       value: 
@@ -9185,9 +9189,17 @@ PrefabInstance:
       propertyPath: wallJumpCooldownBarUI
       value: 
       objectReference: {fileID: 1043172890}
+    - target: {fileID: 6933525980028598261, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
+      propertyPath: m_Layer
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 8836365634834088470, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: m_Name
       value: Player
+      objectReference: {fileID: 0}
+    - target: {fileID: 8836365634834088470, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
+      propertyPath: m_Layer
+      value: 3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
