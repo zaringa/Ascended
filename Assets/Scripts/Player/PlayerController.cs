@@ -737,4 +737,18 @@ public class PlayerController : MonoBehaviour
         if (bufferMoveDir != Vector3.zero)
             velocity = Vector3.zero;
     }
+
+    public void AddExternalImpulse(Vector3 impulse)
+    {
+        velocity += impulse;
+    }
+
+    public void ResetVelocity()
+    {
+        velocity = Vector3.zero;
+        bufferMoveDir = Vector3.zero;
+        wallJumpMomentum = Vector3.zero;
+        momentumVelocity = Vector3.zero;
+        hasMomentum = false;
+    }
 }
