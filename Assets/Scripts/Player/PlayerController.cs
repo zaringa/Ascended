@@ -616,7 +616,7 @@ public class PlayerController : MonoBehaviour
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
         
         // Подкат возможен только на земле, если есть скорость и прошел кулдаун
-        if (characterController.isGrounded && !isSliding && currentHorizontalVelocity.magnitude > 0.1f)
+        if (characterController.isGrounded && !isSliding)
         {
             slideCooldownSystem.ActivateCooldown();
             StartSlide();
