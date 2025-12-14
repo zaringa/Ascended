@@ -37,7 +37,6 @@ public class GrappleDetector : MonoBehaviour
 
     void DetectPoint()
     {
-        // Если Grapple временно запрещён (cooldown), не ищем точки вообще
         if (grapple != null && !grapple.CanGrapple())
         {
             if (currentPoint != null)

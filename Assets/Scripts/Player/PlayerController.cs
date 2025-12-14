@@ -751,4 +751,24 @@ public class PlayerController : MonoBehaviour
         momentumVelocity = Vector3.zero;
         hasMomentum = false;
     }
+
+    public void SetVelocity(Vector3 newVelocity)
+    {
+        velocity = newVelocity;
+
+        // Сброс инерции от других механик
+        bufferMoveDir = Vector3.zero;
+        wallJumpMomentum = Vector3.zero;
+        momentumVelocity = Vector3.zero;
+        hasMomentum = false;
+
+        // --- ИСПРАВЛЕНИЕ ПРЫЖКА ---
+        // Принудительно обнуляем таймеры, чтобы койот-тайм не сработал
+        coyoteTimeCounter = 0f;
+        jumpBufferCounter = 0f;
+        
+        // Говорим контроллеру, что в прошлом кадре мы НЕ были на земле.
+        // Это предотвратит активацию койота в следующем кадре Update.
+        wasGroundedLastFrame = false; 
+    }
 }

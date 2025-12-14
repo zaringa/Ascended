@@ -10,5 +10,5 @@ public class GrapplePoint : MonoBehaviour
     public float minHeightDifference = 1f;
 
     [Header("UI")]
-    public GameObject hintUI; // Иконка "Можно притянуться"
+    public GameObject hintUI;
 }
