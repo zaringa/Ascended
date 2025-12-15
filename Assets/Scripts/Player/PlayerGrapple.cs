@@ -10,7 +10,7 @@ public class PlayerGrapple : MonoBehaviour
 
     [Header("Detection Settings")]
     [SerializeField] private Camera cam;
-    [Tooltip("Слои стен/пола. НЕ ВКЛЮЧАЙ сюда слой самих точек, если у них есть коллайдеры!")]
+    [Tooltip("Слои стен/пола. Точки зацепа сюда НЕ включать.")]
     [SerializeField] private LayerMask obstacleLayers; 
     [Tooltip("Угол обзора (половина конуса).")]
     [SerializeField] private float detectionAngle = 15f; 
@@ -21,22 +21,22 @@ public class PlayerGrapple : MonoBehaviour
     [SerializeField] private Transform handPosition;
 
     [Header("Pull Physics")]
-    public float pullAcceleration = 90f;
-    public float maxPullSpeed = 40f;
-    public float stopDistance = 2.0f;
-
-    [Header("Vault Settings")]
-    public float targetHeightOffset = 2.0f; 
+    [Tooltip("Как быстро набирается скорость")]
+    public float pullAcceleration = 150f; // Увеличил, чтобы быстрее разгоняться
+    [Tooltip("Максимальная скорость полета")]
+    public float maxPullSpeed = 50f;      // Скорость полета к точке
+    [Tooltip("На каком расстоянии от точки крюк отцепляется")]
+    public float stopDistance = 1.5f;     
 
     [Header("Finish Momentum")]
-    public float horizontalMomentumPreserve = 1.0f;
-    public float upwardBoost = 10f;
+    [Tooltip("Множитель итоговой скорости (1 = честная физика, >1 = выстреливает сильнее)")]
+    public float exitMomentumMultiplier = 1.0f;
     public float postGrappleCooldown = 0.35f;
 
-    // --- DEBUG INFO (чтобы видеть в инспекторе, сколько точек найдено) ---
+    // --- DEBUG INFO ---
     [Header("Debug Info")]
-    [SerializeField] private int totalPointsOnLevel; // Показывает, сколько всего точек в списке
-    [SerializeField] private string currentTargetName; // Имя текущей цели
+    [SerializeField] private int totalPointsOnLevel; 
+    [SerializeField] private string currentTargetName; 
 
     private CharacterController controller;
     private PlayerController playerController;
@@ -84,7 +84,6 @@ public class PlayerGrapple : MonoBehaviour
 
     void Update()
     {
-        // Для дебага обновляем кол-во точек в инспекторе
         totalPointsOnLevel = GrapplePoint.AllPoints.Count;
 
         if (isGrappling)
@@ -102,6 +101,7 @@ public class PlayerGrapple : MonoBehaviour
         if (isGrappling) DrawRope();
     }
 
+    // --- ЛОГИКА ПОИСКА (без изменений) ---
     void DetectBestPoint()
     {
         if (Time.time < allowGrappleAt)
@@ -116,7 +116,6 @@ public class PlayerGrapple : MonoBehaviour
         Vector3 camPos = cam.transform.position;
         Vector3 camFwd = cam.transform.forward;
 
-        // Перебор статического списка
         foreach (GrapplePoint point in GrapplePoint.AllPoints)
         {
             if (point == null) continue;
@@ -148,7 +147,7 @@ public class PlayerGrapple : MonoBehaviour
 
             if (currentTargetPoint != null)
             {
-                currentTargetName = currentTargetPoint.name; // Для дебага
+                currentTargetName = currentTargetPoint.name;
                 if (currentTargetPoint.hintUI != null)
                     currentTargetPoint.hintUI.SetActive(true);
             }
@@ -187,25 +186,36 @@ public class PlayerGrapple : MonoBehaviour
         if (target.hintUI != null) target.hintUI.SetActive(false);
 
         isGrappling = true;
-        velocity = Vector3.zero;
+        // Начинаем с текущей скорости игрока или с нуля, по желанию.
+        // Обычно лучше с нуля для резкого рывка, или добавить импульс к текущей.
+        velocity = Vector3.zero; 
 
         lineRenderer.enabled = true;
         playerController.enabled = false;
     }
 
+    // --- ФИЗИКА (Исправленная под ТЗ тимлида) ---
     void ProcessGrappleMovement()
     {
-        Vector3 aimPosition = grapplePointPosition + Vector3.up * targetHeightOffset;
-        Vector3 vectorToAim = aimPosition - transform.position;
-        float distanceToAim = vectorToAim.magnitude;
-        Vector3 dir = vectorToAim.normalized;
+        // 1. Вектор строго к точке (прямая линия)
+        Vector3 vectorToTarget = grapplePointPosition - transform.position;
+        float distance = vectorToTarget.magnitude;
+        Vector3 dir = vectorToTarget.normalized;
 
+        // 2. Ускоряемся к точке
         velocity += dir * pullAcceleration * Time.deltaTime;
-        if (velocity.magnitude > maxPullSpeed) velocity = velocity.normalized * maxPullSpeed;
+        
+        // Ограничение скорости
+        if (velocity.magnitude > maxPullSpeed)
+        {
+            velocity = velocity.normalized * maxPullSpeed;
+        }
 
+        // Двигаем контроллер
         controller.Move(velocity * Time.deltaTime);
 
-        if (distanceToAim <= stopDistance)
+        // 3. Условие выхода: достигли дистанции остановки
+        if (distance <= stopDistance)
         {
             FinishGrapple();
         }
@@ -220,10 +230,13 @@ public class PlayerGrapple : MonoBehaviour
 
         playerController.enabled = true;
 
-        Vector3 exitVelocity = velocity;
-        exitVelocity.x *= horizontalMomentumPreserve;
-        exitVelocity.z *= horizontalMomentumPreserve;
-        exitVelocity.y = upwardBoost;
+        // --- НОВАЯ ЛОГИКА ФИНАЛА ---
+        // Берем вектор скорости, который был в момент отцепления.
+        // Он направлен точно в сторону движения (к точке).
+        // Если летели снизу -> вектор смотрит вверх-вперед -> мы летим вверх-вперед по параболе (гравитация сделает свое дело).
+        // Если летели прямо -> вектор смотрит вперед -> летим вперед.
+        
+        Vector3 exitVelocity = velocity * exitMomentumMultiplier;
 
         playerController.SetVelocity(exitVelocity);
     }

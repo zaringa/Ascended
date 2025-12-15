@@ -9035,6 +9035,14 @@ PrefabInstance:
       propertyPath: wallJumpCooldownBarUI
       value: 
       objectReference: {fileID: 1043172890}
+    - target: {fileID: 6524023769935187637, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
+      propertyPath: maxPullSpeed
+      value: 25
+      objectReference: {fileID: 0}
+    - target: {fileID: 6524023769935187637, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
+      propertyPath: exitMomentumMultiplier
+      value: 0.9
+      objectReference: {fileID: 0}
     - target: {fileID: 8836365634834088470, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: m_Name
       value: Player
