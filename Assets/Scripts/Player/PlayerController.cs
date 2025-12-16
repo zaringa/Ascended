@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+
     [Header("Input")]
     [SerializeField] private InputActionReference movementAction;
     [SerializeField] private InputActionReference dashAction;
@@ -62,6 +63,7 @@ public class PlayerController : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
         originalHeight = characterController.height;
+
         if (cameraRoot != null)
         {
             originalCameraLocalPos = cameraRoot.localPosition;

@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class PlayerLook : MonoBehaviour
 {
+
     [Header("Input")]
     [SerializeField] private InputActionReference lookAction;
 
@@ -21,7 +22,7 @@ public class PlayerLook : MonoBehaviour
 
     private float verticalRotation = 0f;
     private bool isFirstFrame = true;
-    private Vector2 lookAxis;
+    public Vector2 lookAxis;
 
     void Start()
     {
@@ -34,6 +35,7 @@ public class PlayerLook : MonoBehaviour
                 return;
             }
         }
+
 
         transform.localRotation = Quaternion.identity;
         verticalRotation = 0f;
