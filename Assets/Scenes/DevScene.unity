@@ -9503,6 +9503,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5488502794779278579, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
+      propertyPath: coyoteTime
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5488502794779278579, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: dashCooldownBarUI
       value: 
       objectReference: {fileID: 1899587076}
@@ -9516,7 +9520,7 @@ PrefabInstance:
       objectReference: {fileID: 2035557423}
     - target: {fileID: 6524023769935187637, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: maxPullSpeed
-      value: 25
+      value: 35
       objectReference: {fileID: 0}
     - target: {fileID: 6524023769935187637, guid: 5a7c94c12d7c3834caa23f087039f827, type: 3}
       propertyPath: exitMomentumMultiplier

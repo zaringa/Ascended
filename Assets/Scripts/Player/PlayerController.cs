@@ -313,7 +313,7 @@ public class PlayerController : MonoBehaviour
             // Сбрасываем флаг отскока при приземлении
             hasJumpedFromWall = false;
         }
-        else if (wasGroundedLastFrame)
+        else if (coyoteTimeCounter > 0)
         {
             coyoteTimeCounter -= Time.deltaTime;
         }
@@ -456,9 +456,6 @@ public class PlayerController : MonoBehaviour
         // Приоритет 3: Обычное движение
         else
         {
-            // Горизонтальная скорость (x/z)
-            Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-
             // Управление на земле — с ускорением и замедлением
             if (characterController.isGrounded && !isSliding)
             {
@@ -506,7 +503,7 @@ public class PlayerController : MonoBehaviour
         if (!allowJump) return;
 
         bool isWallSliding = wallNormal != Vector3.zero && !characterController.isGrounded && !hasJumpedFromWall;
-        bool canGroundJump = characterController.isGrounded || (coyoteTimeCounter > 0 && !isSliding);
+        bool canGroundJump = characterController.isGrounded || coyoteTimeCounter > 0;
 
         if (jumpBufferCounter > 0)
         {
@@ -569,6 +566,8 @@ public class PlayerController : MonoBehaviour
 
         bufferMoveDir = velocity;
 
+        velocity = Vector3.zero;
+
         Vector3 dashDirection;
 
         if(characterController.isGrounded)
@@ -602,7 +601,10 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(dashDuration);
 
         // Возвращаем горизонтальную скорость до состояния до деша
-        velocity = new Vector3(bufferMoveDir.x, 0, bufferMoveDir.z);
+        Vector2 input = movementAction.action.ReadValue<Vector2>();
+        Vector3 expectedVelocity = transform.right * input.x + transform.forward * input.y;
+
+        velocity = expectedVelocity * movementSpeed;
 
         // Сбрасываем флаг деша
         bufferMoveDir = Vector3.zero;
