@@ -19,14 +19,13 @@ public class SubmachineGun : BaseWeapon
 
         lastFireTime = Time.time;
         currentMagazineAmmo--;
-        //TODO Нужен фикс
-        /*
+
         InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
         InvokeWeaponFired();
-        PlaySound(gunInfo.fireSound);*/
+        PlaySound(gunInfo.fireSound);
 
         // Логика стрельбы (например, создание снаряда)
-        Debug.Log("SubmachineGun fired!");
+        // Debug.Log("SubmachineGun fired!");
 
         if (currentMagazineAmmo <= 0)
             StartReload();
