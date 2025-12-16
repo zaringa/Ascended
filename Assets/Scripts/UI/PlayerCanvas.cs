@@ -10,12 +10,12 @@ public class PlayerCanvas : MonoBehaviour
     void UpdateSize(float size)
     {
         sizePanel.sizeDelta = new Vector2(1920 / size, 1080 / size);
-        sizePanel.localScale = new Vector2(size, size);
+        sizePanel.localScale = new Vector3(size, size, 1);
     }
     void UpdateMargin(float marginWidth, float marginHeight)
     {
-        marginPanel.anchorMin = new Vector2(marginWidth / 1920 / 2, marginHeight / 1080 / 2);
-        marginPanel.anchorMax = new Vector2(1 - marginWidth / 1920 / 2, 1 - marginHeight / 1080 / 2);
+        marginPanel.anchorMin = new Vector2(marginWidth / 1920, marginHeight / 1080);
+        marginPanel.anchorMax = new Vector2(1 - marginWidth / 1920, 1 - marginHeight / 1080);
     }
     void Update()
     {
