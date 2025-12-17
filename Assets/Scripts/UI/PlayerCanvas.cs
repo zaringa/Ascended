@@ -12,7 +12,7 @@ public class PlayerCanvas : MonoBehaviour
     {
         if (size <= 0) return;
         sizePanel.sizeDelta = new Vector2(1920 / size, 1080 / size);
-        sizePanel.localScale = new Vector3(size, size, 1);
+        sizePanel.localScale = new Vector3(size, size, size);
     }
     void UpdateMargin(float marginWidth, float marginHeight)
     {
