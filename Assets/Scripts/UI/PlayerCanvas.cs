@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[ExecuteAlways]
 public class PlayerCanvas : MonoBehaviour
 {
     public float marginWidth = 0;
@@ -9,6 +10,7 @@ public class PlayerCanvas : MonoBehaviour
     [SerializeField] RectTransform marginPanel;
     void UpdateSize(float size)
     {
+        if (size <= 0) return;
         sizePanel.sizeDelta = new Vector2(1920 / size, 1080 / size);
         sizePanel.localScale = new Vector3(size, size, 1);
     }
