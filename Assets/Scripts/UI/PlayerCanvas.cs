@@ -16,15 +16,15 @@ public class PlayerCanvas : MonoBehaviour
     }
     void UpdateMargin(float marginWidth, float marginHeight)
     {
-        float scale = Screen.height / 1080f;
-        float sizePanelScreenWidth = 1920f * scale;
+        float scale = Screen.height / sizePanel.sizeDelta.y;
+        float sizePanelScreenWidth = sizePanel.sizeDelta.x * scale;
         float excessWidth = Screen.width - sizePanelScreenWidth;
         float localExcessHalf = excessWidth / 2f / scale;
 
         marginPanel.sizeDelta = new Vector2(localExcessHalf * 2f, 0f);
 
-        marginPanel.anchorMin = new Vector2(0f + marginWidth / 1920f, marginHeight / 1080f);
-        marginPanel.anchorMax = new Vector2(1f - marginWidth / 1920f, 1f - marginHeight / 1080f);
+        marginPanel.anchorMin = new Vector2(0f + marginWidth / sizePanel.sizeDelta.x, marginHeight / sizePanel.sizeDelta.y);
+        marginPanel.anchorMax = new Vector2(1f - marginWidth / sizePanel.sizeDelta.x, 1f - marginHeight / sizePanel.sizeDelta.y);
     }
     void Update()
     {
