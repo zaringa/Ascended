@@ -51,6 +51,7 @@ MonoBehaviour:
   minVerticalAngle: -90
   maxVerticalAngle: 90
   playerBody: {fileID: 35144442013320164}
+  lookAxis: {x: 0, y: 0}
 --- !u!1 &6933525980028598261
 GameObject:
   m_ObjectHideFlags: 0
@@ -65,7 +66,7 @@ GameObject:
   - component: {fileID: 4638518608701869882}
   m_Layer: 3
   m_Name: Camera
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -352,14 +353,13 @@ MonoBehaviour:
   slideCooldownBarUI: {fileID: 0}
   wallJumpCooldownBarUI: {fileID: 0}
   movementSpeed: 9
-  momentumDecayTime: 1
+  dashSpeed: 30
+  dashDuration: 0.25
+  dashBaseCooldown: 5
   allowJump: 1
   jumpHeight: 2
   jumpBufferTime: 0.1
   coyoteTime: 0.1
-  dashSpeed: 30
-  dashDuration: 0.25
-  dashBaseCooldown: 5
   slideDuration: 2
   slideSpeedBonus: 15
   slideBoostBuildupTime: 0.1
@@ -375,6 +375,7 @@ MonoBehaviour:
   wallJumpForce: 15
   wallJumpMomentumDecay: 5
   wallJumpBaseCooldownTime: 5
+  momentumDecayTime: 1
   gravity: -14.715
   baseFOV: 60
   fovMultiplier: 1.5

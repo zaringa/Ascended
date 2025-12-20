@@ -9,9 +9,10 @@ public interface IWaypoint
 public class Waypoint : MonoBehaviour, IWaypoint, IUseable
 {
     public Compass compassRef;
+    public Transform _tr;
     void Start()
     {
-        compassRef.AddWaypoint(this);
+        //compassRef.AddWaypoint(this);
     }
     public void Execute()
     {
