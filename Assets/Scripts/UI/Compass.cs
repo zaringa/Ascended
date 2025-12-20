@@ -5,44 +5,36 @@ using System.Collections.Generic;
 using System;
 using System.Linq;
 
-public class Waypoint_UI: Image
-{
-    public Waypoint wpCartridge;
-    public float angle = 0F;
-    private Vector2 plyrAngle;
-    private PlayerLook plyr;
-    public void Init(Waypoint _wp)
-    {
-        this.wpCartridge = _wp;
-        plyr = FindFirstObjectByType<PlayerLook>().GetComponent<PlayerLook>();
-    }
-    void Update()
-    {
-        try
-        {
-            rectTransform.position = GetComponentInChildren<Camera>().WorldToScreenPoint(wpCartridge.transform.position);
-            Debug.Log(gameObject.transform.localPosition);
-        }
-        catch (NullReferenceException e)
-        {
-            //Destroy(gameObject);
-        }
-    }
-}
-
 public class Compass : MonoBehaviour
 {    
-    public float angle = 0F;
-    public List<GameObject> regist = new List<GameObject>();
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    public void AddWaypoint(Waypoint _ref)
+    public Image _img;
+    public Transform _target;
+    
+    void Update()
     {
-        if (_ref != null)
+        float minX = _img.GetPixelAdjustedRect().width/2;
+        float maxX = Screen.width - minX;
+        float minY = _img.GetPixelAdjustedRect().height/2;
+        float maxY = Screen.height - minY;
+        Vector2 screenPos = Camera.main.WorldToScreenPoint(_target.position);
+        screenPos.x = Mathf.Clamp(screenPos.x, minX, maxX);
+        screenPos.y = Mathf.Clamp(screenPos.y, minY, maxY);
+
+        //Debug.Log(_target.position );
+        //if(_img.rectTransform.position.x < 1.5f)
+        if (Vector3.Dot((_target.position - transform.position), transform.forward) < 0)
         {
-            GameObject o = Instantiate(new GameObject("Waypoint"), gameObject.transform);
-            o.AddComponent<Waypoint_UI>().Init(_ref);
-            regist.Add(o);
+            if(screenPos.x < Screen.width/2)
+            {
+                //change to arrow..
+                screenPos.x = maxX;
+            }
+            else
+            {
+                screenPos.x = minX;
+            }
         }
+        _img.rectTransform.position = screenPos;
     }
 
     // Update is called once per frame

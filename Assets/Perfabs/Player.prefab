@@ -51,6 +51,7 @@ MonoBehaviour:
   minVerticalAngle: -90
   maxVerticalAngle: 90
   playerBody: {fileID: 35144442013320164}
+  lookAxis: {x: 0, y: 0}
 --- !u!1 &6933525980028598261
 GameObject:
   m_ObjectHideFlags: 0
@@ -65,7 +66,7 @@ GameObject:
   - component: {fileID: 4638518608701869882}
   m_Layer: 0
   m_Name: Camera
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -347,6 +348,7 @@ MonoBehaviour:
   slideAction: {fileID: 3661101364445421467, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   movementSpeed: 5
   dashSpeed: 200
+  dashDuration: 0.06
   allowJump: 1
   jumpHeight: 2
   jumpBufferTime: 0.1
