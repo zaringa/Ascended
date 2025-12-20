@@ -18,16 +18,16 @@ MonoBehaviour:
   prefab: {fileID: 0}
   gunName: Pistol
   weaponSprite: {fileID: 0}
-  description: Standard issue weapon.
+  description: 
   type: 1
   weaponModelPrefab: {fileID: 0}
-  damage: 10
+  damage: 2
   maxMagazineCapacity: 10
   fireRate: 0.1
   reloadTime: 2
   projectilePrefab: {fileID: 7315907492049303857, guid: 06515823291fa3ec787c5a186419a47e, type: 3}
-  projectileSpeed: 5
-  projectileLifetime: 5
+  projectileSpeed: 30
+  projectileLifetime: 10
   hitDecalPrefab: {fileID: 0}
   enemyHitDecalPrefab: {fileID: 0}
   decalLifetime: 10
