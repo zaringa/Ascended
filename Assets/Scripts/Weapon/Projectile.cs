@@ -18,6 +18,14 @@ public class Projectile : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+
+        // Проверка наличия коллайдера
+        Collider collider = GetComponent<Collider>();
+        if (collider == null)
+        {
+            SphereCollider sphereCollider = gameObject.AddComponent<SphereCollider>();
+            sphereCollider.radius = 0.05f;
+        }
     }
 
     /// <summary>
@@ -37,6 +45,7 @@ public class Projectile : MonoBehaviour
         if (rb != null)
         {
             rb.useGravity = false; // Снаряд летит прямо без гравитации
+            rb.collisionDetectionMode = CollisionDetectionMode.Continuous; 
             rb.linearVelocity = direction.normalized * speed;
         }
 
@@ -48,7 +57,12 @@ public class Projectile : MonoBehaviour
     {
         if (hasHit) return;
 
-        // Проверяем, не попали ли мы в владельца или его родителей
+        // Игнорируем столкновения с декалями (они могут содержать "Decal" или "Gun" в имени)
+        string objName = collision.gameObject.name.ToLower();
+        if (objName.Contains("decal") || objName.Contains("gun1") || objName.Contains("hitdecal"))
+        {
+            return;
+        }
         if (IsOwnerOrParent(collision.gameObject))
         {
             return;
@@ -56,10 +70,24 @@ public class Projectile : MonoBehaviour
 
         hasHit = true;
 
-        // Получаем точку и нормаль попадания
-        ContactPoint contact = collision.contacts[0];
-        Vector3 hitPoint = contact.point;
-        Vector3 hitNormal = contact.normal;
+        Vector3 hitPoint;
+        Vector3 hitNormal;
+
+        RaycastHit rayHit;
+        Vector3 rayOrigin = transform.position - rb.linearVelocity.normalized * 0.5f;
+        Vector3 rayDirection = rb.linearVelocity.normalized;
+
+        if (Physics.Raycast(rayOrigin, rayDirection, out rayHit, 1f))
+        {
+            hitPoint = rayHit.point;
+            hitNormal = rayHit.normal;
+        }
+        else
+        {
+            ContactPoint contact = collision.contacts[0];
+            hitPoint = contact.point;
+            hitNormal = contact.normal;
+        }
 
         // Проверяем, может ли объект получать урон
         IDamageable damageable = collision.gameObject.GetComponent<IDamageable>();
@@ -88,8 +116,27 @@ public class Projectile : MonoBehaviour
 
     private void CreateDecal(GameObject decalPrefab, Vector3 position, Vector3 normal)
     {
-        GameObject decal = Instantiate(decalPrefab, position, Quaternion.LookRotation(normal));
-        decal.transform.position += normal * 0.01f; // Небольшой отступ от поверхности
+        Quaternion decalRotation = Quaternion.LookRotation(normal);
+
+        Vector3 decalPosition = position + normal * 0.01f;
+
+        GameObject decal = Instantiate(decalPrefab, decalPosition, decalRotation);
+        
+        // Удаляем все коллайдеры с декали - это только визуальный эффект
+        Collider[] colliders = decal.GetComponentsInChildren<Collider>();
+        foreach (Collider col in colliders)
+        {
+            Destroy(col);
+        }
+
+        // Компенсируем смещение дочернего объекта в префабе
+        Transform childTransform = decal.transform.GetChild(0);
+        if (childTransform != null)
+        {
+            Vector3 childLocalPos = childTransform.localPosition;
+            decal.transform.position -= decal.transform.up * childLocalPos.y;
+        }
+
         Destroy(decal, decalLifetime);
     }
 
