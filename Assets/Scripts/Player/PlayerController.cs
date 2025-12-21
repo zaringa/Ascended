@@ -32,14 +32,13 @@ public class PlayerController : MonoBehaviour
     [Header("Slide settings")]
     [SerializeField] private float slideDuration = 0.5f;
     [SerializeField] private float slideSpeedBonus = 8f;
-    [SerializeField] private float slideBoostBuildupTime = 0.1f;
     [SerializeField] private float slideHeight = 1f;
     [SerializeField] private float cameraSlideOffset = -0.5f;
     [SerializeField] private float heightLerpSpeed = 10f;
     [SerializeField] private Transform cameraRoot;
     [SerializeField] private float slideBaseCooldown = 5.0f;
 
-    [Header("Rebound settings")]
+    [Header("WallJump settings")]
     [SerializeField] private float wallCheckDistance = 0.6f;
     [SerializeField] private string wallTag = "Wall";
     [SerializeField] private float wallSlideSpeed = -1f;
@@ -80,11 +79,8 @@ public class PlayerController : MonoBehaviour
     private Vector3 previousPosition;
     private float previousSpeed;
     
-    // Dash & General Momentum
-    private Vector3 bufferMoveDir;
-    private bool hasMomentum;
-    private Vector3 momentumVelocity;
-    private float momentumTimer;
+    // Dash state — заменён bufferMoveDir на флаг
+    private bool isDashing;
 
     // Wall Logic
     private Vector3 wallNormal = Vector3.zero;
@@ -198,7 +194,7 @@ public class PlayerController : MonoBehaviour
         UpdateTimers();
         HandleWallCheck();
 
-        if (bufferMoveDir == Vector3.zero)
+        if (!isDashing)
         {
             HandleMovement();
         }
@@ -251,7 +247,7 @@ public class PlayerController : MonoBehaviour
         bool isSlidingOnWall = wallNormal != Vector3.zero && !characterController.isGrounded;
 
         // Пропускаем гравитацию, если сейчас деш
-        if (bufferMoveDir != Vector3.zero) return;
+        if (isDashing) return;
 
         // 1. На земле
         if (characterController.isGrounded && velocity.y <= 0)
@@ -313,20 +309,13 @@ public class PlayerController : MonoBehaviour
             // Сбрасываем флаг отскока при приземлении
             hasJumpedFromWall = false;
         }
-        else if (wasGroundedLastFrame)
+        else if (coyoteTimeCounter > 0)
         {
             coyoteTimeCounter -= Time.deltaTime;
         }
 
         // General Momentum Decay (Dash exit / Slide exit)
-        if (hasMomentum && momentumTimer > 0)
-        {
-            momentumTimer -= Time.deltaTime;
-            if (momentumTimer <= 0)
-            {
-                hasMomentum = false;
-            }
-        }
+        // Не используется, так как hasMomentum не устанавливается в true
     }
 
     // --- WALL CHECK LOGIC ---
@@ -435,30 +424,10 @@ public class PlayerController : MonoBehaviour
             }
         }
         // Приоритет 2: Инерция после Dash или Slide (Script 1)
-        else if (hasMomentum && momentumTimer > 0)
-        {
-            if (input.magnitude > 0.1f)
-            {
-                // Игрок пытается двигаться, плавно переходим от инерции к вводу
-                Vector3 targetVelocity = moveDirection * movementSpeed;
-                float t = 1f - (momentumTimer / momentumDecayTime);
-                velocity.x = Mathf.Lerp(momentumVelocity.x, targetVelocity.x, t);
-                velocity.z = Mathf.Lerp(momentumVelocity.z, targetVelocity.z, t);
-            }
-            else
-            {
-                // Игрок не жмет кнопки, просто замедляем инерцию
-                float decayFactor = momentumTimer / momentumDecayTime;
-                velocity.x = momentumVelocity.x * decayFactor;
-                velocity.z = momentumVelocity.z * decayFactor;
-            }
-        }
+        // Не используется, так как hasMomentum не устанавливается в true
         // Приоритет 3: Обычное движение
         else
         {
-            // Горизонтальная скорость (x/z)
-            Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-
             // Управление на земле — с ускорением и замедлением
             if (characterController.isGrounded && !isSliding)
             {
@@ -506,7 +475,7 @@ public class PlayerController : MonoBehaviour
         if (!allowJump) return;
 
         bool isWallSliding = wallNormal != Vector3.zero && !characterController.isGrounded && !hasJumpedFromWall;
-        bool canGroundJump = characterController.isGrounded || (coyoteTimeCounter > 0 && !isSliding);
+        bool canGroundJump = characterController.isGrounded || coyoteTimeCounter > 0;
 
         if (jumpBufferCounter > 0)
         {
@@ -567,7 +536,9 @@ public class PlayerController : MonoBehaviour
         if (dashCooldownSystem.IsOnCooldown) return; 
         dashCooldownSystem.ActivateCooldown();
 
-        bufferMoveDir = velocity;
+        isDashing = true;
+
+        velocity = Vector3.zero;
 
         Vector3 dashDirection;
 
@@ -602,10 +573,13 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(dashDuration);
 
         // Возвращаем горизонтальную скорость до состояния до деша
-        velocity = new Vector3(bufferMoveDir.x, 0, bufferMoveDir.z);
+        Vector2 input = movementAction.action.ReadValue<Vector2>();
+        Vector3 expectedVelocity = transform.right * input.x + transform.forward * input.y;
+
+        velocity = expectedVelocity * movementSpeed;
 
         // Сбрасываем флаг деша
-        bufferMoveDir = Vector3.zero;
+        isDashing = false;
     }
 
     // --- SLIDE LOGIC (Script 1) ---
@@ -676,8 +650,8 @@ public class PlayerController : MonoBehaviour
         }
 
         // Отключаем другие виды инерции
-        hasMomentum = false;
-        momentumTimer = 0f;
+        // hasMomentum = false; — не используется
+        // momentumTimer = 0f; — не используется
     }
 
     private void UpdateSlide()
@@ -732,12 +706,6 @@ public class PlayerController : MonoBehaviour
         }
     }
 
-    void OnCollisionEnter(Collision collision)
-    {
-        if (bufferMoveDir != Vector3.zero)
-            velocity = Vector3.zero;
-    }
-
     public void AddExternalImpulse(Vector3 impulse)
     {
         velocity += impulse;
@@ -746,10 +714,8 @@ public class PlayerController : MonoBehaviour
     public void ResetVelocity()
     {
         velocity = Vector3.zero;
-        bufferMoveDir = Vector3.zero;
+        isDashing = false;
         wallJumpMomentum = Vector3.zero;
-        momentumVelocity = Vector3.zero;
-        hasMomentum = false;
     }
 
     public void SetVelocity(Vector3 newVelocity)
@@ -757,10 +723,8 @@ public class PlayerController : MonoBehaviour
         velocity = newVelocity;
 
         // Сброс инерции от других механик
-        bufferMoveDir = Vector3.zero;
+        isDashing = false;
         wallJumpMomentum = Vector3.zero;
-        momentumVelocity = Vector3.zero;
-        hasMomentum = false;
 
         // --- ИСПРАВЛЕНИЕ ПРЫЖКА ---
         // Принудительно обнуляем таймеры, чтобы койот-тайм не сработал
