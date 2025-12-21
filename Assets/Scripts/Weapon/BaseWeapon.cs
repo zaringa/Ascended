@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System;
 
 public abstract class BaseWeapon : MonoBehaviour
 {
@@ -9,7 +10,26 @@ public abstract class BaseWeapon : MonoBehaviour
     [Header("Текущее состояние")]
     protected int currentMagazineAmmo;
     protected bool isReloading = false;
+    protected bool isAttacking = false;
     protected float lastFireTime;
+
+    [Header("Компоненты")]
+    protected AudioSource audioSource;
+    protected Animator animator;
+
+    // События
+    public event Action<int, int> OnAmmoChanged; // (текущие патроны, максимум)
+    public event Action OnReloadStarted;
+    public event Action OnReloadCompleted;
+    public event Action OnWeaponFired;
+    public event Action OnWeaponAttack;
+
+    // Публичные свойства
+    public int CurrentAmmo => currentMagazineAmmo;
+    public int MaxAmmo => gunInfo != null ? gunInfo.maxMagazineCapacity : 0;
+    public bool IsReloading => isReloading;
+    public bool IsAttacking => isAttacking;
+    public GunInfo.WeaponType WeaponType => gunInfo != null ? gunInfo.type : GunInfo.WeaponType.Firearm;
 
     protected virtual void Start()
     {
@@ -19,9 +39,21 @@ public abstract class BaseWeapon : MonoBehaviour
             return;
         }
 
-        // Проверка специфичных данных для типа оружия
+        // Получаем компоненты
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+
+        animator = GetComponent<Animator>();
+
+        // Инициализация патронов
         if (gunInfo.type == GunInfo.WeaponType.Firearm)
         {
+            currentMagazineAmmo = gunInfo.maxMagazineCapacity;
+            InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
+
             if (gunInfo.projectilePrefab == null)
             {
                 Debug.LogWarning($"[{gunInfo.name}] Не задан префаб снаряда для огнестрельного оружия!");
@@ -50,12 +82,10 @@ public abstract class BaseWeapon : MonoBehaviour
 
     protected IEnumerator ReloadCoroutine()
     {
-        //TODO Нужен фикс
-        /*
         isReloading = true;
 
         OnReloadStarted?.Invoke();
-        Debug.Log($"Начало перезарядки {gunInfo.name}...");
+        // Debug.Log($"Начало перезарядки {gunInfo.name}...");
 
         // Воспроизведение звука перезарядки
         PlaySound(gunInfo.reloadSound);
@@ -72,7 +102,77 @@ public abstract class BaseWeapon : MonoBehaviour
         currentMagazineAmmo = gunInfo.maxMagazineCapacity;
 
         isReloading = false;
-        Debug.Log("Перезарядка завершена.");*/
-        yield return new WaitForSeconds(1); //! Удалить после фикса
+        OnReloadCompleted?.Invoke();
+        InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
+        // Debug.Log("Перезарядка завершена.");
+    }
+
+    // --- Вспомогательные методы ---
+
+    /// <summary>
+    /// Воспроизведение звука
+    /// </summary>
+    protected void PlaySound(AudioClip clip)
+    {
+        if (audioSource != null && clip != null)
+        {
+            audioSource.PlayOneShot(clip);
+        }
+    }
+
+    /// <summary>
+    /// Вызов события выстрела
+    /// </summary>
+    protected void InvokeWeaponFired()
+    {
+        OnWeaponFired?.Invoke();
+    }
+
+    /// <summary>
+    /// Вызов события атаки холодным оружием
+    /// </summary>
+    protected void InvokeWeaponAttack()
+    {
+        OnWeaponAttack?.Invoke();
+    }
+
+    /// <summary>
+    /// Вызов события изменения патронов
+    /// </summary>
+    protected void InvokeAmmoChanged(int current, int max)
+    {
+        OnAmmoChanged?.Invoke(current, max);
+    }
+
+    /// <summary>
+    /// Публичный метод для обработки нажатия кнопки огня (для автоматического оружия)
+    /// </summary>
+    public virtual void OnFireButtonPressed()
+    {
+        // Переопределяется в дочерних классах при необходимости
+    }
+
+    /// <summary>
+    /// Публичный метод для обработки отпускания кнопки огня (для автоматического оружия)
+    /// </summary>
+    public virtual void OnFireButtonReleased()
+    {
+        // Переопределяется в дочерних классах при необходимости
+    }
+
+    /// <summary>
+    /// Получить точку выстрела (переопределяется в дочерних классах)
+    /// </summary>
+    public virtual Vector3 GetFirePoint()
+    {
+        return transform.position;
+    }
+
+    /// <summary>
+    /// Получить направление выстрела (переопределяется в дочерних классах)
+    /// </summary>
+    public virtual Vector3 GetFireDirection()
+    {
+        return transform.forward;
     }
 }

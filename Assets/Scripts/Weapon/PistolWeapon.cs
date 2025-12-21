@@ -16,12 +16,24 @@ public class PistolWeapon : BaseWeapon
         // Если точка выстрела не задана, используем позицию оружия
         if (firePoint == null)
         {
-            Debug.LogWarning($"[{gunInfo.name}] Fire Point не назначен, используется позиция оружия");
+            // Debug.LogWarning($"[{gunInfo.name}] Fire Point не назначен, используется позиция оружия");
             firePoint = transform;
         }
 
+        // Выключаем свет от вспышки
         if (muzzleLight != null)
-        {muzzleLight.enabled = false;}
+        {
+            muzzleLight.enabled = false;
+        }
+
+        // Останавливаем партиклы при старте (если они запущены)
+        if (muzzleFlash != null)
+        {
+            muzzleFlash.Stop();
+            var main = muzzleFlash.main;
+            main.playOnAwake = false;
+            main.loop = false;
+        }
     }
 
     public override bool TryToFire()
@@ -36,37 +48,35 @@ public class PistolWeapon : BaseWeapon
         {
             currentMagazineAmmo--;
             lastFireTime = Time.time;
-            
-            // --- Логика стрельбы Пистолета ---
-            Debug.Log($"[ПИСТОЛЕТ] Выстрел. Урон: {gunInfo.damage}");
-            
-            // TODO: Raycast или логика нанесения урона
-            
+
+            Fire();
+            InvokeAmmoChanged(currentMagazineAmmo, gunInfo.maxMagazineCapacity);
+
             return true;
         }
         else
         {
-            Debug.Log($"[{gunInfo.name}] Патроны закончились! Нужна перезарядка.");
+            // Debug.Log($"[{gunInfo.name}] Патроны закончились! Нужна перезарядка.");
             return false;
         }
     }
 
     private void Fire()
     {
-        //TODO Нужен фикс
-        /*Debug.Log($"[{gunInfo.name}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
+        // Debug.Log($"[{gunInfo.name}] Выстрел! Урон: {gunInfo.damage}, Патронов осталось: {currentMagazineAmmo}");
         InvokeWeaponFired();
-        // PlaySound(gunInfo.fireSound); - временный мут чтобы воспроизводить очередь
+        PlaySound(gunInfo.fireSound);
         PlayMuzzleFlash();
         if (animator != null)
-        {animator.SetTrigger("Fire");}
-        SpawnProjectile();*/
+        {
+            animator.SetTrigger("Fire");
+        }
+        SpawnProjectile();
     }
 
     private void SpawnProjectile()
     {
-        //TODO Нужен фикс
-        /*if (gunInfo.projectilePrefab == null)
+        if (gunInfo.projectilePrefab == null)
         {
             Debug.LogError($"[{gunInfo.name}] Префаб снаряда не назначен!");
             return;
@@ -74,7 +84,10 @@ public class PistolWeapon : BaseWeapon
 
         Vector3 spawnPosition = GetFirePoint();
         Vector3 fireDirection = GetFireDirection();
-        GameObject projectileObj = Instantiate(gunInfo.projectilePrefab, spawnPosition, Quaternion.identity);
+
+        // Поворачиваем снаряд в направлении полета
+        Quaternion projectileRotation = Quaternion.LookRotation(fireDirection);
+        GameObject projectileObj = Instantiate(gunInfo.projectilePrefab, spawnPosition, projectileRotation);
 
         // Получаем компонент снаряда и инициализируем его
         Projectile projectile = projectileObj.GetComponent<Projectile>();
@@ -88,14 +101,14 @@ public class PistolWeapon : BaseWeapon
                 hitDecal: gunInfo.hitDecalPrefab,
                 enemyHitDecal: gunInfo.enemyHitDecalPrefab,
                 decalLifetime: gunInfo.decalLifetime,
-                ownerObject: gameObject // Передаем оружие как владельца
+                ownerObject: gameObject
             );
         }
         else
         {
-            Debug.LogError($"[{gunInfo.name}] У префаба снаряда нет компонента Projectile!");
+            // Debug.LogError($"[{gunInfo.name}] У префаба снаряда нет компонента Projectile!");
             Destroy(projectileObj);
-        }*/
+        }
     }
 
     private void PlayMuzzleFlash()
@@ -115,12 +128,34 @@ public class PistolWeapon : BaseWeapon
         {muzzleLight.enabled = false;}
     }
 
-    
-    // Переопределение точки выстрела - требуется фикс
-    //public override Vector3 GetFirePoint() 
-    //{ return firePoint != null ? firePoint.position : transform.position; }
 
-    // Переопределение направления выстрела - требуется фикс
-    //public override Vector3 GetFireDirection()
-    //{return firePoint != null ? firePoint.forward : transform.forward;}
+    // Переопределение точки выстрела
+    public override Vector3 GetFirePoint()
+    {
+        return firePoint != null ? firePoint.position : transform.position;
+    }
+
+    // Переопределение направления выстрела
+    public override Vector3 GetFireDirection()
+    {
+        // Стреляем в направлении камеры (куда смотрит игрок)
+        Camera mainCamera = Camera.main;
+
+        if (mainCamera != null)
+        {
+            // Используем forward камеры (уже учитывает все повороты родителей)
+            return mainCamera.transform.forward;
+        }
+
+        // Если нет Main Camera, ищем Camera компонент в родителях
+        Camera parentCamera = GetComponentInParent<Camera>();
+        if (parentCamera != null)
+        {
+            return parentCamera.transform.forward;
+        }
+
+        // Fallback: используем направление firePoint
+        // Debug.LogWarning("Camera not found! Using firePoint direction");
+        return firePoint != null ? firePoint.forward : transform.forward;
+    }
 }
