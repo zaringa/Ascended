@@ -22,11 +22,11 @@ MonoBehaviour:
   type: 1
   weaponModelPrefab: {fileID: 0}
   damage: 2
-  maxMagazineCapacity: 10
+  maxMagazineCapacity: 27
   fireRate: 0.1
   reloadTime: 2
   projectilePrefab: {fileID: 7315907492049303857, guid: 06515823291fa3ec787c5a186419a47e, type: 3}
-  projectileSpeed: 30
+  projectileSpeed: 50
   projectileLifetime: 10
   hitDecalPrefab: {fileID: 0}
   enemyHitDecalPrefab: {fileID: 0}

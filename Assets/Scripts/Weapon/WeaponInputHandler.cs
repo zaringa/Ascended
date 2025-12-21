@@ -88,42 +88,42 @@ public class WeaponInputHandler : MonoBehaviour
     }
 
     // Отображение информации на экране
-    private void OnGUI()
-    {
-        if (weapon == null) return;
+    // private void OnGUI()
+    // {
+    //     if (weapon == null) return;
 
-        GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = 18;
-        style.normal.textColor = Color.white;
+    //     GUIStyle style = new GUIStyle(GUI.skin.label);
+    //     style.fontSize = 18;
+    //     style.normal.textColor = Color.white;
 
-        GUI.Box(new Rect(10, 10, 250, 120), "");
-        GUI.Label(new Rect(20, 15, 300, 30), $"Оружие: {weapon.gunInfo.name}", style);
+    //     GUI.Box(new Rect(10, 10, 250, 120), "");
+    //     GUI.Label(new Rect(20, 15, 300, 30), $"Оружие: {weapon.gunInfo.name}", style);
 
-        if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
-        {
-            GUI.Label(new Rect(20, 45, 300, 30),
-                $"Патроны: {weapon.CurrentAmmo}/{weapon.MaxAmmo}", style);
+    //     if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
+    //     {
+    //         GUI.Label(new Rect(20, 45, 300, 30),
+    //             $"Патроны: {weapon.CurrentAmmo}/{weapon.MaxAmmo}", style);
 
-            if (weapon.IsReloading)
-            {
-                style.normal.textColor = Color.yellow;
-                GUI.Label(new Rect(20, 75, 300, 30), "ПЕРЕЗАРЯДКА...", style);
-                style.normal.textColor = Color.white;
-            }
-        }
-        else
-        {
-            GUI.Label(new Rect(20, 45, 300, 30), "Холодное оружие", style);
-        }
+    //         if (weapon.IsReloading)
+    //         {
+    //             style.normal.textColor = Color.yellow;
+    //             GUI.Label(new Rect(20, 75, 300, 30), "ПЕРЕЗАРЯДКА...", style);
+    //             style.normal.textColor = Color.white;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         GUI.Label(new Rect(20, 45, 300, 30), "Холодное оружие", style);
+    //     }
 
-        if (weapon.IsAttacking)
-        {
-            style.normal.textColor = Color.red;
-            GUI.Label(new Rect(20, 75, 300, 30), "АТАКА!", style);
-            style.normal.textColor = Color.white;
-        }
+    //     if (weapon.IsAttacking)
+    //     {
+    //         style.normal.textColor = Color.red;
+    //         GUI.Label(new Rect(20, 75, 300, 30), "АТАКА!", style);
+    //         style.normal.textColor = Color.white;
+    //     }
 
-        style.fontSize = 14;
-        GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);
-    }
+    //     style.fontSize = 14;
+    //     GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);
+    // }
 }
