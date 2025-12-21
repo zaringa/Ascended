@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -157,30 +157,54 @@ public class PlayerController : MonoBehaviour
 
     void OnEnable()
     {
-        movementAction?.action.Enable();
-        
-        jumpAction?.action.Enable();
-        jumpAction.action.performed += OnJumpPerformed;
-        
-        dashAction?.action.Enable();
-        dashAction.action.performed += OnDashPerformed;
-        
-        slideAction?.action.Enable();
-        slideAction.action.performed += OnSlidePerformed;
+        if (movementAction?.action != null)
+        {
+            movementAction.action.Enable();
+        }
+
+        if (jumpAction?.action != null)
+        {
+            jumpAction.action.Enable();
+            jumpAction.action.performed += OnJumpPerformed;
+        }
+
+        if (dashAction?.action != null)
+        {
+            dashAction.action.Enable();
+            dashAction.action.performed += OnDashPerformed;
+        }
+
+        if (slideAction?.action != null)
+        {
+            slideAction.action.Enable();
+            slideAction.action.performed += OnSlidePerformed;
+        }
     }
 
     void OnDisable()
     {
-        movementAction?.action.Disable();
-        
-        jumpAction?.action.Disable();
-        jumpAction.action.performed -= OnJumpPerformed;
-        
-        dashAction?.action.Disable();
-        dashAction.action.performed -= OnDashPerformed;
-        
-        slideAction?.action.Disable();
-        slideAction.action.performed -= OnSlidePerformed;
+        if (movementAction?.action != null)
+        {
+            movementAction.action.Disable();
+        }
+
+        if (jumpAction?.action != null)
+        {
+            jumpAction.action.performed -= OnJumpPerformed;
+            jumpAction.action.Disable();
+        }
+
+        if (dashAction?.action != null)
+        {
+            dashAction.action.performed -= OnDashPerformed;
+            dashAction.action.Disable();
+        }
+
+        if (slideAction?.action != null)
+        {
+            slideAction.action.performed -= OnSlidePerformed;
+            slideAction.action.Disable();
+        }
     }
 
     void Update()
@@ -192,6 +216,20 @@ public class PlayerController : MonoBehaviour
         dashCooldownSystem.UpdateCooldown(Time.deltaTime);
         slideCooldownSystem.UpdateCooldown(Time.deltaTime);
         wallJumpCooldownSystem.UpdateCooldown(Time.deltaTime);
+
+        // Fallback: Direct keyboard input for actions if InputActionReferences are not set
+        if (jumpAction?.action == null && Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        {
+            jumpBufferCounter = jumpBufferTime;
+        }
+        if (dashAction?.action == null && Keyboard.current != null && Keyboard.current.leftShiftKey.wasPressedThisFrame)
+        {
+            OnDashPerformed(default);
+        }
+        if (slideAction?.action == null && Keyboard.current != null && Keyboard.current.leftCtrlKey.wasPressedThisFrame)
+        {
+            OnSlidePerformed(default);
+        }
 
         UpdateTimers();
         HandleWallCheck();
@@ -337,7 +375,11 @@ public class PlayerController : MonoBehaviour
 
         // Направление проверки зависит от ввода игрока
         Vector3 checkDirection = transform.forward;
-        Vector2 input = movementAction.action.ReadValue<Vector2>();
+        Vector2 input = Vector2.zero;
+        if (movementAction?.action != null)
+        {
+            input = movementAction.action.ReadValue<Vector2>();
+        }
         if (input.magnitude > 0.1f)
         {
             Vector3 inputDir = transform.right * input.x + transform.forward * input.y;
@@ -368,7 +410,26 @@ public class PlayerController : MonoBehaviour
     // --- MOVEMENT LOGIC ---
     void HandleMovement()
     {
-        Vector2 input = movementAction.action.ReadValue<Vector2>();
+        Vector2 input = Vector2.zero;
+        if (movementAction?.action != null)
+        {
+            input = movementAction.action.ReadValue<Vector2>();
+        }
+        else
+        {
+            // Fallback: Direct keyboard input if InputActionReference is not set
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed)
+                    input.y = 1;
+                if (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed)
+                    input.y = -1;
+                if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
+                    input.x = -1;
+                if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
+                    input.x = 1;
+            }
+        }
 
         // --- Изменения для слайда ---
         if (isSliding)
@@ -550,8 +611,12 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            Vector2 inputVector = movementAction.action.ReadValue<Vector2>();
-            
+            Vector2 inputVector = Vector2.zero;
+            if (movementAction?.action != null)
+            {
+                inputVector = movementAction.action.ReadValue<Vector2>();
+            }
+
             if (inputVector.magnitude == 0)
             {
                 dashDirection = cameraRoot.transform.forward;
@@ -561,7 +626,7 @@ public class PlayerController : MonoBehaviour
                 Vector3 inputWorldDirection = inputVector.x * cameraRoot.transform.right + inputVector.y * cameraRoot.transform.forward;
                 dashDirection = inputWorldDirection.normalized;
             }
-            
+
             velocity.y = 0;
         }
 
@@ -575,7 +640,11 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(dashDuration);
 
         // Возвращаем горизонтальную скорость до состояния до деша
-        Vector2 input = movementAction.action.ReadValue<Vector2>();
+        Vector2 input = Vector2.zero;
+        if (movementAction?.action != null)
+        {
+            input = movementAction.action.ReadValue<Vector2>();
+        }
         Vector3 expectedVelocity = transform.right * input.x + transform.forward * input.y;
 
         velocity = expectedVelocity * movementSpeed;
