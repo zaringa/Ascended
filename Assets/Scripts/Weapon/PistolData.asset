@@ -12,9 +12,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19754f66ccc698e49968e95482947c82, type: 3}
   m_Name: PistolData
   m_EditorClassIdentifier: Assembly-CSharp::GunInfo
+  name: TestPistol
+  sprite: {fileID: 0}
+  description: 
+  prefab: {fileID: 0}
   gunName: Pistol
-  damage: 10
+  weaponSprite: {fileID: 0}
+  description: 
+  type: 1
+  weaponModelPrefab: {fileID: 0}
+  damage: 2
+  maxMagazineCapacity: 27
   fireRate: 0.1
-  maxMagazineCapacity: 10
-  reserveAmmoCapacity: 50
   reloadTime: 2
+  projectilePrefab: {fileID: 7315907492049303857, guid: 06515823291fa3ec787c5a186419a47e, type: 3}
+  projectileSpeed: 50
+  projectileLifetime: 10
+  hitDecalPrefab: {fileID: 0}
+  enemyHitDecalPrefab: {fileID: 0}
+  decalLifetime: 10
+  meleeRange: 2
+  meleeAttackDuration: 0.5
+  meleeHitLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  meleeAttackAnimation: {fileID: 0}
+  fireSound: {fileID: 0}
+  reloadSound: {fileID: 0}
+  meleeSwingSound: {fileID: 0}
+  meleeHitSound: {fileID: 0}

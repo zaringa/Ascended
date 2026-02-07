@@ -48,19 +48,40 @@ public class PlayerLook : MonoBehaviour
 
     void OnEnable()
     {
-        lookAction?.action.Enable();
+        if (lookAction?.action != null)
+        {
+            lookAction.action.Enable();
+        }
     }
 
     void OnDisable()
     {
-        lookAction?.action.Disable();
+        if (lookAction?.action != null)
+        {
+            lookAction.action.Disable();
+        }
     }
 
     void Update()
     {
-        if (lookAction == null || playerBody == null) return;
+        if (playerBody == null) return;
 
-        Vector2 lookInput = lookAction.action.ReadValue<Vector2>();
+        Vector2 lookInput = Vector2.zero;
+
+        // Try to get input from InputActionReference
+        if (lookAction?.action != null)
+        {
+            lookInput = lookAction.action.ReadValue<Vector2>();
+        }
+        else
+        {
+            // Fallback: Direct mouse input if InputActionReference is not set
+            if (Mouse.current != null)
+            {
+                // Mouse.delta returns pixels, so we need to scale it down
+                lookInput = Mouse.current.delta.ReadValue() * 0.1f;
+            }
+        }
 
         // Игнорируем первый кадр после включения/запуска, чтобы избежать дёргания
         if (isFirstFrame)

@@ -31,59 +31,39 @@ public class WeaponInputHandler : MonoBehaviour
         {
             Debug.LogError("[WeaponInputHandler] Оружие не найдено! Назначьте BaseWeapon в инспекторе.");
         }
-        else
-        {
-            Debug.Log($"[WeaponInputHandler] Найдено оружие: {weapon.gunInfo.name}");
-            Debug.Log("ЛКМ - стрелять/атаковать, R - перезарядка");
-        }
+        // else
+        // {
+        //     Debug.Log($"[WeaponInputHandler] Найдено оружие: {weapon.gunInfo.name}");
+        //     Debug.Log("ЛКМ - стрелять/атаковать, R - перезарядка");
+        // }
     }
 
     private void Update()
     {
-        //TODO Нужен фикс
-        /*if (weapon == null) return; - Требуется фикс
+        if (weapon == null) return;
         if (mouse == null || keyboard == null) return;
 
         if (useMouseButton)
         {
-            if (weapon is SemiAutoRifle)
-            {
-                if (mouse.leftButton.wasPressedThisFrame)
-                {
-                    weapon.TryToFire();
-                }
-            }
-            else if (weapon is DoubleBarrelShotgun)
-            {
-                if (mouse.leftButton.wasPressedThisFrame)
-                {
-                    weapon.TryToFire();
-                }
-            }
-            else if (weapon is Katana)
-            {
-                if (mouse.leftButton.wasPressedThisFrame)
-                {
-                    weapon.TryToFire();
-                }
-            }
-            else if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
+            // Огнестрельное оружие - автоматическая стрельба при удержании
+            if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
             {
                 if (mouse.leftButton.isPressed) // ЛКМ удержание
                 {
-                    if (!wasFiring) 
+                    if (!wasFiring)
                     {
                         weapon.OnFireButtonPressed();
                         wasFiring = true;
                     }
                     weapon.TryToFire();
                 }
-                else if (wasFiring) 
+                else if (wasFiring)
                 {
                     weapon.OnFireButtonReleased();
                     wasFiring = false;
                 }
             }
+            // Холодное оружие - одиночная атака по нажатию
             else
             {
                 if (mouse.leftButton.wasPressedThisFrame) // ЛКМ нажатие
@@ -99,49 +79,51 @@ public class WeaponInputHandler : MonoBehaviour
             weapon.StartReload();
             return;
         }
+
+        // Альтернативная клавиша стрельбы
         if (keyboard[alternativeFireKey].isPressed && alternativeFireKey != Key.R)
         {
             weapon.TryToFire();
-        }*/
+        }
     }
 
     // Отображение информации на экране
-    private void OnGUI()
-    {
-        //TODO Нужен фикс
-        /*if (weapon == null) return;
+    // private void OnGUI()
+    // {
+    //     if (weapon == null) return;
 
-        GUIStyle style = new GUIStyle(GUI.skin.label);
-        style.fontSize = 18;
-        style.normal.textColor = Color.white;
+    //     GUIStyle style = new GUIStyle(GUI.skin.label);
+    //     style.fontSize = 18;
+    //     style.normal.textColor = Color.white;
 
-        GUI.Box(new Rect(10, 10, 250, 120), "");
-        GUI.Label(new Rect(20, 15, 300, 30), $"Оружие: {weapon.gunInfo.name}", style);
+    //     GUI.Box(new Rect(10, 10, 250, 120), "");
+    //     GUI.Label(new Rect(20, 15, 300, 30), $"Оружие: {weapon.gunInfo.name}", style);
 
-        if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
-        {
-            GUI.Label(new Rect(20, 45, 300, 30),
-                $"Патроны: {weapon.CurrentAmmo}/{weapon.MaxAmmo}", style);
+    //     if (weapon.WeaponType == GunInfo.WeaponType.Firearm)
+    //     {
+    //         GUI.Label(new Rect(20, 45, 300, 30),
+    //             $"Патроны: {weapon.CurrentAmmo}/{weapon.MaxAmmo}", style);
 
-            if (weapon.IsReloading)
-            {
-                style.normal.textColor = Color.yellow;
-                GUI.Label(new Rect(20, 75, 300, 30), "ПЕРЕЗАРЕЖАЮСЬ", style);
-                style.normal.textColor = Color.white;
-            }
-        }
-        else
-        {
-            GUI.Label(new Rect(20, 45, 300, 30), "Холодное оружие", style);
-        }
+    //         if (weapon.IsReloading)
+    //         {
+    //             style.normal.textColor = Color.yellow;
+    //             GUI.Label(new Rect(20, 75, 300, 30), "ПЕРЕЗАРЯДКА...", style);
+    //             style.normal.textColor = Color.white;
+    //         }
+    //     }
+    //     else
+    //     {
+    //         GUI.Label(new Rect(20, 45, 300, 30), "Холодное оружие", style);
+    //     }
 
-        if (weapon.IsAttacking)
-        {
-            style.normal.textColor = Color.red;
-            GUI.Label(new Rect(20, 75, 300, 30), "РАТАТАТАТАТА", style);
-            style.normal.textColor = Color.white;
-        }
-        style.fontSize = 14;
-        GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);*/
-    }
+    //     if (weapon.IsAttacking)
+    //     {
+    //         style.normal.textColor = Color.red;
+    //         GUI.Label(new Rect(20, 75, 300, 30), "АТАКА!", style);
+    //         style.normal.textColor = Color.white;
+    //     }
+
+    //     style.fontSize = 14;
+    //     GUI.Label(new Rect(20, 105, 300, 20), "ЛКМ - Атака | R - Перезарядка", style);
+    // }
 }

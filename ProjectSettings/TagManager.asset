@@ -3,19 +3,20 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - Wall
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Player
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Player
+  - Weapon
+  - Projectile
+  - Wall
+  - HitDecal
   - 
   - 
   - 
@@ -43,3 +44,5 @@ TagManager:
     locked: 0
   m_RenderingLayers:
   - Default
+  - Layer 1
+  - Layer 2
