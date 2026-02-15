@@ -1,6 +1,6 @@
 using Player.Items;
 using UnityEngine;
-using Systems.Stats; 
+using Systems.Stats;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "NewGunInfo", menuName = "Game/Gun Info")]
