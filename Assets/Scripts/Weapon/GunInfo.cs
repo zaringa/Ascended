@@ -1,10 +1,10 @@
 using Player.Items;
 using UnityEngine;
-
-// 
+using Systems.Stats; 
+using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "NewGunInfo", menuName = "Game/Gun Info")]
-public class GunInfo : RenderableItem
+public class GunInfo : RenderableItem, IStatModifierSource 
 {
     [Header("Идентификация")]
     public string gunName = "Default Weapon";
@@ -74,5 +74,32 @@ public class GunInfo : RenderableItem
         // Общие проверки
         if (damage <= 0)
             damage = 1f;
+    }
+
+    // --- Реализация интерфейса для новой системы статов ---
+    public IEnumerable<ModifierData> GetModifiers()
+    {
+        var modifiers = new List<ModifierData>();
+
+        // Превращаем старые поля GunInfo в новые Модификаторы
+        
+        // 1. Урон
+        modifiers.Add(new ModifierData {
+            statType = StatType.Damage,
+            modifierType = ModifierType.Flat,
+            value = damage
+        });
+
+        // 2. Скорострельность
+        modifiers.Add(new ModifierData {
+            statType = StatType.FireRate,
+            modifierType = ModifierType.Flat,
+            value = fireRate
+        });
+
+        // 3. Магазин (если есть такой тип статы)
+        // modifiers.Add(new ModifierData { ... value = maxMagazineCapacity ... });
+
+        return modifiers;
     }
 }
