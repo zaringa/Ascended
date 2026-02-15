@@ -9,8 +9,6 @@ public class GunInfo : RenderableItem
     [Header("Идентификация")]
     public string gunName = "Default Weapon";
     public Sprite weaponSprite;
-    [TextArea(3, 5)]
-    public string description = "Standard issue weapon.";
     
     // Перечисление для типизации оружия
     public enum WeaponType { Melee, Firearm };
