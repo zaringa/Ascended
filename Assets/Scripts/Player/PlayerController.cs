@@ -1,14 +1,23 @@
 using System.Collections;
+using System.IO.Compression;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+    [Header("Localization")]
+    public string acitveLocale;
+
+    [Header("Animation")]
+    [SerializeField] private Animator _animator;
 
     [Header("Input")]
     [SerializeField] private InputActionReference movementAction;
     [SerializeField] private InputActionReference dashAction;
+    [SerializeField] private InputActionReference switchLocaleAction;
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private InputActionReference slideAction;
     [SerializeField] private CooldownBarUI dashCooldownBarUI;
@@ -95,6 +104,9 @@ public class PlayerController : MonoBehaviour
     private float originalHeight;
     private Vector3 originalCameraLocalPos;
 
+// anim
+    private Vector3 hipsOffset;
+
     public float CurrentSpeed
     {
         get
@@ -161,23 +173,25 @@ public class PlayerController : MonoBehaviour
         {
             movementAction.action.Enable();
         }
-
         if (jumpAction?.action != null)
         {
             jumpAction.action.Enable();
             jumpAction.action.performed += OnJumpPerformed;
         }
-
         if (dashAction?.action != null)
         {
             dashAction.action.Enable();
             dashAction.action.performed += OnDashPerformed;
         }
-
         if (slideAction?.action != null)
         {
             slideAction.action.Enable();
             slideAction.action.performed += OnSlidePerformed;
+        }
+        if (switchLocaleAction?.action != null)
+        {
+            switchLocaleAction.action.Enable();
+            switchLocaleAction.action.performed += OnLocaleSwitch;
         }
     }
 
@@ -187,23 +201,25 @@ public class PlayerController : MonoBehaviour
         {
             movementAction.action.Disable();
         }
-
         if (jumpAction?.action != null)
         {
             jumpAction.action.performed -= OnJumpPerformed;
             jumpAction.action.Disable();
         }
-
         if (dashAction?.action != null)
         {
             dashAction.action.performed -= OnDashPerformed;
             dashAction.action.Disable();
         }
-
         if (slideAction?.action != null)
         {
             slideAction.action.performed -= OnSlidePerformed;
             slideAction.action.Disable();
+        }
+        if (switchLocaleAction?.action != null)
+        {
+            switchLocaleAction.action.performed -= OnLocaleSwitch;
+            switchLocaleAction.action.Disable();
         }
     }
 
@@ -230,9 +246,14 @@ public class PlayerController : MonoBehaviour
         {
             OnSlidePerformed(default);
         }
-
+        if (switchLocaleAction?.action == null && Keyboard.current != null && Keyboard.current.leftAltKey.wasPressedThisFrame)
+        {
+            Debug.Log("Tab key pressed");
+            OnLocaleSwitch(default);
+        }
         UpdateTimers();
         HandleWallCheck();
+        _animator.SetFloat("Sped",CurrentSpeed);
 
         if (!isDashing)
         {
@@ -531,8 +552,27 @@ public class PlayerController : MonoBehaviour
     void OnJumpPerformed(InputAction.CallbackContext context)
     {
         jumpBufferCounter = jumpBufferTime;
-    }
+        SwitchLocale();
 
+        
+    }
+    private void OnLocaleSwitch(InputAction.CallbackContext context)
+    {
+        SwitchLocale();
+    }
+    void SwitchLocale()
+    {
+        switch(acitveLocale)
+        {
+            case "en":
+                LocalizationSettings.SelectedLocale = LocalizationSettings.AvailableLocales.Locales[0];
+                break;
+            case "ru":
+                LocalizationSettings.SelectedLocale = LocalizationSettings.AvailableLocales.Locales[1];
+                break;
+        }
+
+    }
     void HandleJump()
     {
         if (!allowJump) return;

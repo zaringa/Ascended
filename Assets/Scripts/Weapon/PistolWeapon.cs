@@ -8,7 +8,7 @@ public class PistolWeapon : BaseWeapon
     [Header("Визуальные эффекты")]
     [SerializeField] private ParticleSystem muzzleFlash; // Вспышка выстрела
     [SerializeField] private Light muzzleLight; // Свет от выстрела
-
+    [SerializeField] private CharacterIK _ik; // 
     protected override void Start()
     {
         base.Start();
@@ -78,6 +78,7 @@ public class PistolWeapon : BaseWeapon
     {
         if (gunInfo.projectilePrefab == null)
         {
+            _ik.Reset();
             Debug.LogError($"[{gunInfo.name}] Префаб снаряда не назначен!");
             return;
         }

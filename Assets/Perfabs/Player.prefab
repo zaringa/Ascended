@@ -284,6 +284,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!136 &4915075397918742383
 CapsuleCollider:
@@ -345,24 +346,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9041395aacd10de4aba44cdbf63af0f2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
+  acitveLocale: {fileID: 0}
+  _animator: {fileID: 0}
   movementAction: {fileID: -1680190386980627800, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   dashAction: {fileID: -6192597183114217218, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  switchLocaleAction: {fileID: -6989894579697815485, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   jumpAction: {fileID: -6000595813187283402, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   slideAction: {fileID: 3661101364445421467, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   dashCooldownBarUI: {fileID: 0}
   slideCooldownBarUI: {fileID: 0}
   wallJumpCooldownBarUI: {fileID: 0}
   movementSpeed: 9
-  dashSpeed: 30
-  dashDuration: 0.25
-  dashBaseCooldown: 5
+  momentumDecayTime: 1
   allowJump: 1
   jumpHeight: 2
   jumpBufferTime: 0.1
   coyoteTime: 0.1
+  dashSpeed: 30
+  dashDuration: 0.25
+  dashBaseCooldown: 5
   slideDuration: 2
   slideSpeedBonus: 15
-  slideBoostBuildupTime: 0.1
   slideHeight: 1
   cameraSlideOffset: -0.1
   heightLerpSpeed: 20
@@ -375,7 +379,6 @@ MonoBehaviour:
   wallJumpForce: 15
   wallJumpMomentumDecay: 5
   wallJumpBaseCooldownTime: 5
-  momentumDecayTime: 1
   gravity: -14.715
   baseFOV: 60
   fovMultiplier: 1.5
@@ -422,15 +425,13 @@ MonoBehaviour:
   pullAcceleration: 60
   maxPullSpeed: 40
   stopDistance: 4
-  targetHeightOffset: 3.5
-  horizontalMomentumPreserve: 1
-  upwardBoost: 2
+  exitMomentumMultiplier: 1
   postGrappleCooldown: 0.35
   totalPointsOnLevel: 0
   currentTargetName: 
 --- !u!120 &3304281517736591456
 LineRenderer:
-  serializedVersion: 2
+  serializedVersion: 3
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -476,6 +477,7 @@ LineRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_Positions:
   - {x: 0, y: 0, z: 0}
   - {x: 0, y: 0, z: 1}
@@ -534,7 +536,6 @@ LineRenderer:
     textureScale: {x: 1, y: 1}
     shadowBias: 0.5
     generateLightingData: 0
-  m_MaskInteraction: 0
   m_UseWorldSpace: 1
   m_Loop: 0
   m_ApplyActiveColorSpace: 1
