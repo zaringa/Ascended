@@ -1,70 +1,219 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(CharacterController))]
-public class PlayerController : MonoBehaviour
+public class PlayerController : MonoBehaviour,
+    IControllable,      // Конролируется игроком
+    IMoving,            // Передвигается
+    IWallJumping,       // Прыгает (в том числе от стен)
+    IDashing,           // Совершает рывок
+    ISliding,           // Совершает слайд
+    IDamageable,        // Получает урон
+    IDestroyable,       // Уничтожаем
+    IGravityAffectable, // Зависим от гравитации
+    IImplantable,       // Имеющий импланты
+    IStatusable         // Имеющий статусы
 {
-
     [Header("Input")]
+    public Dictionary<string, InputActionReference> Actions => throw new System.NotImplementedException();
     [SerializeField] private InputActionReference movementAction;
     [SerializeField] private InputActionReference dashAction;
     [SerializeField] private InputActionReference jumpAction;
     [SerializeField] private InputActionReference slideAction;
-    [SerializeField] private CooldownBarUI dashCooldownBarUI;
-    [SerializeField] private CooldownBarUI slideCooldownBarUI;
-    [SerializeField] private CooldownBarUI wallJumpCooldownBarUI;
 
+    #region MOVEMENT_SETTINGS
     [Header("Movement settings")]
+    float IMoving.MovementSpeedModified => movementSpeed;
+    float IMoving.MovementSpeedBase => movementSpeed;
     [SerializeField] private float movementSpeed = 5f;
+    float IMoving.MomentumDecayModified => momentumDecayTime;
+    float IMoving.MomentumDecayBase => momentumDecayTime;
     [SerializeField] private float momentumDecayTime = .05f;
-    
+    public float CurrentHorizontalSpeed
+    {
+        get
+        {
+            // Получаем фактическое перемещение за кадр
+            Vector3 currentVelocity = (transform.position - previousPosition) / Time.deltaTime;
+            // Убираем вертикальную составляющую, так как нас интересует только горизонтальная скорость
+            currentVelocity.y = 0;
+            float currentSpeed = currentVelocity.magnitude;
+            if (Time.deltaTime > 0) // Сглаживаем скорость от кадра к кадру
+                currentSpeed = Mathf.Lerp(previousSpeed, currentSpeed, Time.deltaTime * 10f);
+            return previousSpeed = currentSpeed;
+        }
+    }
+    private bool wasGroundedLastFrame;
+    Vector3 IMoving.MoveDirection { get => moveDirection; set => moveDirection = value; }
+    private Vector3 moveDirection;
+    Vector3 IMoving.PreviousPosition { get => previousPosition; set => previousPosition = value; }
+    private Vector3 previousPosition;
+    float IMoving.PreviousSpeed { get => previousSpeed; set => previousSpeed = value; }
+    private float previousSpeed;
+    #endregion
+
+    #region JUMP_SETTINGS
     [Header("Jump settings")]
-    [SerializeField] private bool allowJump = true;
+    float IJumping.JumpHeightModified => jumpHeight;
+    float IJumping.JumpHeightBase => jumpHeight;
     [SerializeField] private float jumpHeight = 2f;
+    float IJumping.JumpBufferTime => jumpBufferTime;
     [SerializeField] private float jumpBufferTime = 0.1f;
+    float IJumping.CoyoteTime => coyoteTime;
     [SerializeField] private float coyoteTime = 0.1f;
+    bool IJumping.CanJump => CanPerformJump;
+    private bool CanPerformJump => characterController.isGrounded || coyoteTimeCounter > 0;
+    [SerializeField] private bool allowJump = true;
+    #endregion
 
+    #region DASH_SETTINGS
     [Header("Dash settings")]
+    float IDashing.DashSpeedModified => dashSpeed;
+    float IDashing.DashSpeedBase => dashSpeed;
     [SerializeField] private float dashSpeed = 200.0f;
+    float IDashing.DashDurationBase => dashDuration;
+    float IDashing.DashDurationModified => dashDuration;
     [SerializeField] private float dashDuration = .06f;
+    float IDashing.CooldownTimeBase => dashBaseCooldown;
+    float IDashing.CooldownTimeModified => dashBaseCooldown;
     [SerializeField] private float dashBaseCooldown = 5.0f;
+    bool IDashing.IsDashing { get => isDashing; set => isDashing = value; }
+    private bool isDashing = false;
+    bool IDashing.CanPerform => CanPerformDash;
+    private bool CanPerformDash => allowDash && !dashCooldownSystem.IsOnCooldown;
+    [SerializeField] private bool allowDash = true;
+    // Dash state — заменён bufferMoveDir на флаг
+    #endregion
 
+    #region SLIDE_SETTINGS
     [Header("Slide settings")]
+    float ISliding.SlideDurationModified => slideHeight;
+    float ISliding.SlideDurationBase => slideHeight;
     [SerializeField] private float slideDuration = 0.5f;
+    float ISliding.SlideSpeedMultiplierModified => slideSpeedBonus;
+    float ISliding.SlideSpeedMultiplierBase => slideSpeedBonus;
     [SerializeField] private float slideSpeedBonus = 8f;
+    float ISliding.SlideHeightModified => slideHeight;
+    float ISliding.SlideHeightBase => slideHeight;
     [SerializeField] private float slideHeight = 1f;
+    bool ISliding.IsSliding { get => isSliding; set => isSliding = value; }
+    private bool isSliding = false;
+    float ISliding.CooldownTimeBase => slideBaseCooldown;
+    float ISliding.CooldownTimeModified => slideBaseCooldown;
+    [SerializeField] private float slideBaseCooldown = 5.0f;
     [SerializeField] private float cameraSlideOffset = -0.5f;
     [SerializeField] private float heightLerpSpeed = 10f;
     [SerializeField] private Transform cameraRoot;
-    [SerializeField] private float slideBaseCooldown = 5.0f;
+    bool ISliding.CanPerform => CanPerformSlide;
+    private bool CanPerformSlide => allowSlide && (!slideCooldownSystem.IsOnCooldown && characterController.isGrounded && !isSliding);
+    [SerializeField] private bool allowSlide = true;
+    // Slide Logic
+    private float slideTimer;
+    private Vector3 slideBoost = Vector3.zero;
+    private float originalHeight;
+    private Vector3 originalCameraLocalPos;
+    #endregion
 
+    #region WALL_JUMP_SETTINGS
     [Header("WallJump settings")]
+    [SerializeField] private string wallTag = IWallJumping.WallTag;
+    float IWallJumping.WallCheckDistance => wallCheckDistance;
     [SerializeField] private float wallCheckDistance = 0.6f;
-    [SerializeField] private string wallTag = "Wall";
+    float IWallJumping.WallSlideSpeedModified => wallSlideSpeed;
+    float IWallJumping.WallSlideSpeedBase => wallSlideSpeed;
     [SerializeField] private float wallSlideSpeed = -1f;
+    float IWallJumping.WallJumpHeightModified => wallJumpHeight;
+    float IWallJumping.WallJumpHeightBase => wallJumpHeight;
     [SerializeField] private float wallJumpHeight = 3f;
+    float IWallJumping.WallJumpForceModified => wallJumpForce;
+    float IWallJumping.WallJumpForceBase => wallJumpForce;
     [SerializeField] private float wallJumpForce = 10f;
+    float IWallJumping.MomentumDecayBase => wallJumpMomentumDecay;
+    float IWallJumping.MomentumDecayModified => wallJumpMomentumDecay;
     [SerializeField] private float wallJumpMomentumDecay = 2f;
+    float IWallJumping.CooldownTimeModified => wallJumpBaseCooldownTime;
+    float IWallJumping.CooldownTimeBase => wallJumpBaseCooldownTime;
     [SerializeField] private float wallJumpBaseCooldownTime = 5.0f;
+    bool IWallJumping.CanPerform => CanPerformWallJump;
+    private bool CanPerformWallJump => allowWallJump && (wallNormal != Vector3.zero && !characterController.isGrounded && !hasJumpedFromWall && !wallJumpCooldownSystem.IsOnCooldown);
+    [SerializeField] private bool allowWallJump = true;
+    // Wall Logic
+    private Vector3 wallNormal = Vector3.zero;
+    private Vector3 wallJumpMomentum = Vector3.zero;
+    private bool hasJumpedFromWall = false;
+    #endregion
 
+    #region GRAVITY
     [Header("Gravity")]
-    [SerializeField] private float gravity = -9.81f;
+    bool IGravityAffectable.UseGravity { get => useGravity; set => useGravity = value; }
+    private bool useGravity = true;
+    Vector3 IGravityAffectable.GravityDirection { get => gravityDirection; set => gravityDirection = value; }
+    [SerializeField] private Vector3 gravityDirection = new(0, -9.81f, 0);
+    #endregion
 
+    #region FOV_SETTINGS
     // === FOV CONTROL ===
     [Header("Camera FOV Settings")]
     [SerializeField] private float baseFOV = 60f;              // Базовый FOV из настроек игрока
     [SerializeField] private float fovMultiplier = 2f;         // Множитель: maxFOV = baseFOV * fovMultiplier
     [SerializeField] private float fovSafeZoneSpeed = 5f;      // Ниже этой скорости FOV не меняется
     [SerializeField] private float maxSpeedForFOV = 30f;       // При этой скорости достигается max FOV
+    #endregion
 
     // Private References
     private Camera mainCamera;
 
-    // Cooldown Systems
+    #region COOLDOWN_SYSTEMS
+    CooldownSystem IDashing.CooldownSystem { get => dashCooldownSystem; set => dashCooldownSystem = value; }
     private CooldownSystem dashCooldownSystem;
+    CooldownSystem ISliding.CooldownSystem { get => slideCooldownSystem; set => slideCooldownSystem = value; }
     private CooldownSystem slideCooldownSystem;
+    CooldownSystem IWallJumping.CooldownSystem { get => wallJumpCooldownSystem; set => wallJumpCooldownSystem = value; }
     private CooldownSystem wallJumpCooldownSystem;
+    #endregion
+
+    #region COOLDOWN_BARS
+    CooldownBarUI IDashing.CooldownBar { get => dashCooldownBarUI; }
+    [SerializeField] private CooldownBarUI dashCooldownBarUI;
+    CooldownBarUI ISliding.CooldownBar { get => slideCooldownBarUI; }
+    [SerializeField] private CooldownBarUI slideCooldownBarUI;
+    CooldownBarUI IWallJumping.CooldownBar { get => wallJumpCooldownBarUI; }
+    [SerializeField] private CooldownBarUI wallJumpCooldownBarUI;
+    #endregion
+
+    #region HEALTH
+    float IDamageable.CurrentHealth { get => currentHealth; set => currentHealth = value; }
+    [SerializeField] private float currentHealth;
+    float IDamageable.MaxHealth { get => maxHealth; set => maxHealth = value; }
+    [SerializeField] private float maxHealth;
+    #endregion
+
+    #region TODO
+    CooldownSystem IAbility.CooldownSystem { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+    public float BaseCooldown => throw new System.NotImplementedException();
+    public CooldownBarUI CooldownBar => throw new System.NotImplementedException();
+    public bool CanPerform => throw new System.NotImplementedException();
+    public void Activate() => throw new System.NotImplementedException();
+    List<Status> IStatusable.Statuses { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+    List<Implant> IImplantable.Implants { get => throw new System.NotImplementedException(); set => throw new System.NotImplementedException(); }
+    float IAbility.CooldownTimeBase => throw new System.NotImplementedException();
+    float IAbility.CooldownTimeModified => throw new System.NotImplementedException();
+    public void TakeDamage(float damage, Vector3 hitPoint, Vector3 hitNormal) => throw new System.NotImplementedException();
+    public bool IsAlive() => throw new System.NotImplementedException();
+    public void Destroy() => throw new System.NotImplementedException();
+    public void AddImplant(Implant implant) => throw new System.NotImplementedException();
+    public void RemoveImplant(Implant implant) => throw new System.NotImplementedException();
+    public void AddStatus(Status status) => throw new System.NotImplementedException();
+    public void RemoveStatus(Status status) => throw new System.NotImplementedException();
+    public void ApplyDamageAbsolute(float damageAmount, IDamaging source) => throw new System.NotImplementedException();
+    public void ApplyDamageRelative(float damageFraction, IDamaging source) => throw new System.NotImplementedException();
+    public void ApplyHealAbsolute(float healAmount, IDamaging source) => throw new System.NotImplementedException();
+    public void ApplyHealRelative(float healFraction, IDamaging source) => throw new System.NotImplementedException();
+    public void SetHealthAbsolute(float healthAmount, IDamaging source) => throw new System.NotImplementedException();
+    public void SetHealthRelative(float healthFraction, IDamaging source) => throw new System.NotImplementedException();
+    #endregion
 
     // Private Variables
     private CharacterController characterController;
@@ -73,49 +222,6 @@ public class PlayerController : MonoBehaviour
     // Timers
     private float jumpBufferCounter;
     private float coyoteTimeCounter;
-    
-    // States
-    private bool wasGroundedLastFrame;
-    private Vector3 moveDirection;
-    private Vector3 previousPosition;
-    private float previousSpeed;
-    
-    // Dash state — заменён bufferMoveDir на флаг
-    private bool isDashing;
-
-    // Wall Logic
-    private Vector3 wallNormal = Vector3.zero;
-    private Vector3 wallJumpMomentum = Vector3.zero;
-    private bool hasJumpedFromWall = false;
-
-    // Slide Logic
-    private bool isSliding;
-    private float slideTimer;
-    private Vector3 slideBoost = Vector3.zero;
-    private float originalHeight;
-    private Vector3 originalCameraLocalPos;
-
-    public float CurrentSpeed
-    {
-        get
-        {
-            // Получаем фактическое перемещение за кадр
-            Vector3 currentVelocity = (transform.position - previousPosition) / Time.deltaTime;
-            // Убираем вертикальную составляющую, так как нас интересует только горизонтальная скорость
-            currentVelocity.y = 0;
-            
-            float currentSpeed = currentVelocity.magnitude;
-            
-            // Сглаживаем скорость от кадра к кадру
-            if (Time.deltaTime > 0)
-            {
-                currentSpeed = Mathf.Lerp(previousSpeed, currentSpeed, Time.deltaTime * 10f);
-            }
-            
-            previousSpeed = currentSpeed;
-            return currentSpeed;
-        }
-    }
 
     void Awake()
     {
@@ -125,55 +231,36 @@ public class PlayerController : MonoBehaviour
         if (cameraRoot != null)
         {
             originalCameraLocalPos = cameraRoot.localPosition;
-
             // Try to get Camera — directly or in children
-            if (!cameraRoot.TryGetComponent<Camera>(out mainCamera))
-            {
+            if (!cameraRoot.TryGetComponent(out mainCamera))
                 mainCamera = cameraRoot.GetComponentInChildren<Camera>();
-            }
-
             // Если не нашли — попытка на самом Player (на случай, если cameraRoot не задан)
-            if (mainCamera == null && !TryGetComponent<Camera>(out mainCamera))
-            {
+            if (mainCamera == null && !TryGetComponent(out mainCamera))
                 mainCamera = GetComponentInChildren<Camera>();
-            }
-
             if (mainCamera != null)
-            {
-                // Инициализируем FOV
-                mainCamera.fieldOfView = baseFOV;
-            }
+                mainCamera.fieldOfView = baseFOV; // Инициализируем FOV
         }
 
-        // Initialize Cooldown Systems
-        dashCooldownSystem = new CooldownSystem(dashBaseCooldown);
-        slideCooldownSystem = new CooldownSystem(slideBaseCooldown);
-        wallJumpCooldownSystem = new CooldownSystem(wallJumpBaseCooldownTime);
-
-        dashCooldownBarUI.cooldownSystem = dashCooldownSystem;
-        slideCooldownBarUI.cooldownSystem = slideCooldownSystem;
-        wallJumpCooldownBarUI.cooldownSystem = wallJumpCooldownSystem;
+        // Initialize Cooldown Systems and set Colldown bars
+        dashCooldownBarUI.cooldownSystem = dashCooldownSystem = new CooldownSystem(dashBaseCooldown);
+        slideCooldownBarUI.cooldownSystem = slideCooldownSystem = new CooldownSystem(slideBaseCooldown);
+        wallJumpCooldownBarUI.cooldownSystem = wallJumpCooldownSystem = new CooldownSystem(wallJumpBaseCooldownTime);
     }
 
     void OnEnable()
     {
         if (movementAction?.action != null)
-        {
             movementAction.action.Enable();
-        }
-
         if (jumpAction?.action != null)
         {
             jumpAction.action.Enable();
             jumpAction.action.performed += OnJumpPerformed;
         }
-
         if (dashAction?.action != null)
         {
             dashAction.action.Enable();
             dashAction.action.performed += OnDashPerformed;
         }
-
         if (slideAction?.action != null)
         {
             slideAction.action.Enable();
@@ -184,22 +271,17 @@ public class PlayerController : MonoBehaviour
     void OnDisable()
     {
         if (movementAction?.action != null)
-        {
             movementAction.action.Disable();
-        }
-
         if (jumpAction?.action != null)
         {
             jumpAction.action.performed -= OnJumpPerformed;
             jumpAction.action.Disable();
         }
-
         if (dashAction?.action != null)
         {
             dashAction.action.performed -= OnDashPerformed;
             dashAction.action.Disable();
         }
-
         if (slideAction?.action != null)
         {
             slideAction.action.performed -= OnSlidePerformed;
@@ -219,26 +301,16 @@ public class PlayerController : MonoBehaviour
 
         // Fallback: Direct keyboard input for actions if InputActionReferences are not set
         if (jumpAction?.action == null && Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
-        {
-            jumpBufferCounter = jumpBufferTime;
-        }
+            OnJumpPerformed(default);
         if (dashAction?.action == null && Keyboard.current != null && Keyboard.current.leftShiftKey.wasPressedThisFrame)
-        {
             OnDashPerformed(default);
-        }
         if (slideAction?.action == null && Keyboard.current != null && Keyboard.current.leftCtrlKey.wasPressedThisFrame)
-        {
             OnSlidePerformed(default);
-        }
 
         UpdateTimers();
         HandleWallCheck();
-
         if (!isDashing)
-        {
             HandleMovement();
-        }
-
         HandleJump();
         HandleSlide();
         ApplyGravity();
@@ -247,176 +319,143 @@ public class PlayerController : MonoBehaviour
 
         Vector3 displacement = velocity * Time.deltaTime;
         CollisionFlags collisionFlags = characterController.Move(displacement);
-
         if ((collisionFlags & CollisionFlags.Above) != 0)
-        {
             if (velocity.y > 0)
-            {
                 velocity.y = 0;
-            }
-        }
-
         // === FOV UPDATE ===
         UpdateCameraFOV();
     }
 
     void UpdateCameraFOV()
     {
-        if (mainCamera == null) return;
-
-        float speed = CurrentSpeed;
+        if (mainCamera == null)
+            return;
 
         float fov;
-        if (speed <= fovSafeZoneSpeed)
-        {
+        if (CurrentHorizontalSpeed <= fovSafeZoneSpeed)
             fov = baseFOV;
-        }
         else
         {
-            float clampedSpeed = Mathf.Clamp(speed, fovSafeZoneSpeed, maxSpeedForFOV);
+            float clampedSpeed = Mathf.Clamp(CurrentHorizontalSpeed, fovSafeZoneSpeed, maxSpeedForFOV);
             float t = (clampedSpeed - fovSafeZoneSpeed) / (maxSpeedForFOV - fovSafeZoneSpeed);
             fov = Mathf.Lerp(baseFOV, baseFOV * fovMultiplier, t);
         }
 
         // Плавное изменение FOV
-        mainCamera.fieldOfView = Mathf.Lerp(mainCamera.fieldOfView, fov, 10f * Time.deltaTime);
+        mainCamera.fieldOfView =
+            Mathf.Lerp(mainCamera.fieldOfView, fov, 10f * Time.deltaTime);
     }
 
     void ApplyGravity()
     {
         bool isSlidingOnWall = wallNormal != Vector3.zero && !characterController.isGrounded;
-
         // Пропускаем гравитацию, если сейчас деш
-        if (isDashing) return;
-
+        if (isDashing)
+            return;
         // 1. На земле
         if (characterController.isGrounded && velocity.y <= 0)
         {
             velocity.y = -2f; // Прижимаем к земле
-            // Сбрасываем флаг отскока при приземлении
-            hasJumpedFromWall = false;
+            hasJumpedFromWall = false; // Сбрасываем флаг отскока при приземлении
         }
-        // 2. На стене (Wall Slide) - если не в рывке и не в кулдауне отскока
-        else if (isSlidingOnWall && !wallJumpCooldownSystem.IsOnCooldown && !hasJumpedFromWall)
+        // 2. В воздухе у стены
+        else if (useGravity)
         {
-            velocity.y += gravity * Time.deltaTime;
-            // Ограничиваем скорость падения (скольжение)
-            if (velocity.y < wallSlideSpeed)
-            {
-                velocity.y = wallSlideSpeed;
-            }
-        }
-        // 3. В воздухе
-        else
-        {
-            velocity.y += gravity * Time.deltaTime;
+            velocity += gravityDirection * Time.deltaTime;
+            // 3. На стене (Wall Slide) - если не в рывке и не в кулдауне отскока
+            if (isSlidingOnWall && !wallJumpCooldownSystem.IsOnCooldown && !hasJumpedFromWall && velocity.y < wallSlideSpeed)
+                velocity.y = wallSlideSpeed; // Ограничиваем скорость падения (скольжение)
         }
     }
 
     // Добавляем метод для обработки столкновений
     void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        // Проверяем, столкнулись ли мы сверху
-        if (Vector3.Angle(hit.normal, Vector3.down) < 45f) // угол между нормалью и вектором вниз
+        if (Vector3.Angle(hit.normal, Vector3.down) < 45f)
+            velocity.y = 0;
         {
-            if (velocity.y > 0) // если движемся вверх
-            {
-                velocity.y = 0; // обнуляем вертикальную скорость
-            }
-        }
-        // Проверяем, столкнулись ли мы снизу (например, при прыжке под потолок)
-        else if (Vector3.Angle(hit.normal, Vector3.up) < 45f)
-        {
-            if (velocity.y < 0) // если движемся вниз
-            {
-                velocity.y = 0; // обнуляем вертикальную скорость
-            }
+            // old code
+            // // Проверяем, столкнулись ли мы сверху
+            // if (Vector3.Angle(hit.normal, Vector3.down) < 45f) // угол между нормалью и вектором вниз
+            //     if (velocity.y > 0) // если движемся вверх
+            //         velocity.y = 0; // обнуляем вертикальную скорость
+
+            // // Проверяем, столкнулись ли мы снизу (например, при прыжке под потолок)
+            // else if (Vector3.Angle(hit.normal, Vector3.up) < 45f)
+            //     if (velocity.y < 0) // если движемся вниз
+            //         velocity.y = 0; // обнуляем вертикальную скорость
         }
     }
 
+    #region TIMERS
     void UpdateTimers()
     {
-        // Jump Buffering
-        if (jumpBufferCounter > 0) jumpBufferCounter -= Time.deltaTime;
-
-        // Coyote Time
+        if (jumpBufferCounter > 0)
+            jumpBufferCounter -= Time.deltaTime;
         if (characterController.isGrounded)
         {
             coyoteTimeCounter = coyoteTime;
             // Сбрасываем инерцию от стены, если коснулись земли
-            wallJumpMomentum = Vector3.zero;
-            wallNormal = Vector3.zero;
+            wallJumpMomentum = wallNormal = Vector3.zero;
             // Сбрасываем флаг отскока при приземлении
             hasJumpedFromWall = false;
         }
         else if (coyoteTimeCounter > 0)
-        {
             coyoteTimeCounter -= Time.deltaTime;
-        }
 
         // General Momentum Decay (Dash exit / Slide exit)
         // Не используется, так как hasMomentum не устанавливается в true
     }
 
+    private void ResetTimers()
+        => coyoteTimeCounter = jumpBufferCounter = 0f;
+    #endregion
+
     // --- WALL CHECK LOGIC ---
     void HandleWallCheck()
     {
         wallNormal = Vector3.zero;
-
         // Мы не ищем стену, если мы на земле (чтобы не липнуть к плинтусам)
-        if (characterController.isGrounded) return;
-
+        if (characterController.isGrounded)
+            return;
         // Не проверяем стену, если уже использовали отскок после прыжка
-        if (hasJumpedFromWall) return;
-
-        RaycastHit hit;
-        Vector3 origin = transform.position;
-        float radius = characterController.radius; // Используем радиус контроллера
+        if (hasJumpedFromWall)
+            return;
 
         // Направление проверки зависит от ввода игрока
         Vector3 checkDirection = transform.forward;
         Vector2 input = Vector2.zero;
         if (movementAction?.action != null)
-        {
             input = movementAction.action.ReadValue<Vector2>();
-        }
         if (input.magnitude > 0.1f)
         {
             Vector3 inputDir = transform.right * input.x + transform.forward * input.y;
             checkDirection = inputDir.normalized;
         }
 
-        if (Physics.SphereCast(origin, radius, checkDirection, out hit, wallCheckDistance))
+        if (Physics.SphereCast(transform.position, characterController.radius, checkDirection, out RaycastHit hit, wallCheckDistance))
         {
             // Проверяем тег (если нужен)
             if (!string.IsNullOrEmpty(wallTag) && !hit.collider.CompareTag(wallTag))
-            {
                 return;
-            }
 
             // Проверяем угол (чтобы это была стена, а не пол или потолок)
             float angle = Vector3.Angle(Vector3.up, hit.normal);
             if (angle > 70f && angle < 110f) // Слегка расширил углы
-            {
                 // Если кулдаун после отскока прошел, фиксируем стену
                 if (!wallJumpCooldownSystem.IsOnCooldown)
-                {
                     wallNormal = hit.normal;
-                }
-            }
         }
     }
 
     // --- MOVEMENT LOGIC ---
+    void IMoving.HandleMovement() => HandleMovement();
     void HandleMovement()
     {
         Vector2 input = Vector2.zero;
         if (movementAction?.action != null)
-        {
             input = movementAction.action.ReadValue<Vector2>();
-        }
         else
-        {
             // Fallback: Direct keyboard input if InputActionReference is not set
             if (Keyboard.current != null)
             {
@@ -429,15 +468,13 @@ public class PlayerController : MonoBehaviour
                 if (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed)
                     input.x = 1;
             }
-        }
 
         // --- Изменения для слайда ---
         if (isSliding)
         {
-            // Принудительно устанавливаем "движение вперед", как при зажатой W
-            input.y = 1f;
-            // Блокируем движение назад (S)
-            if (input.y < 0f) input.y = 1f;
+            input.y = 1f; // Принудительно устанавливаем "движение вперед", как при зажатой W
+            // if (input.y < 0f) // Блокируем движение назад (S)
+            //     input.y = 1f;
         }
         // ----------------------------
 
@@ -446,16 +483,12 @@ public class PlayerController : MonoBehaviour
         // Приоритет 0: Инерция от слайда (если есть)
         if (slideBoost.magnitude > 0.1f)
         {
-            // Применяем буст к скорости
-            velocity += slideBoost * Time.deltaTime;
-
+            velocity += slideBoost * Time.deltaTime; // Применяем буст к скорости
             // Если ввод направлен против движения, уменьшаем буст быстрее
             Vector3 inputWorldDir = transform.right * input.x + transform.forward * input.y;
 
             if (Vector3.Dot(inputWorldDir.normalized, slideBoost.normalized) < -0.5f)
-            {
                 slideBoost = Vector3.Lerp(slideBoost, Vector3.zero, 5f * Time.deltaTime);
-            }
         }
         // Приоритет 1: Инерция от Wall Jump (Script 2)
         if (wallJumpMomentum.magnitude > 0.1f)
@@ -490,10 +523,8 @@ public class PlayerController : MonoBehaviour
         // Не используется, так как hasMomentum не устанавливается в true
         // Приоритет 3: Обычное движение
         else
-        {
             // Управление на земле — с ускорением и замедлением
             if (characterController.isGrounded && !isSliding)
-            {
                 // Если есть ввод направления
                 if (input.magnitude > 0.1f)
                 {
@@ -509,9 +540,7 @@ public class PlayerController : MonoBehaviour
                     velocity.x = Mathf.Lerp(velocity.x, 0f, 8f * Time.deltaTime);
                     velocity.z = Mathf.Lerp(velocity.z, 0f, 8f * Time.deltaTime);
                 }
-            }
             else
-            {
                 // В воздухе — изменение направления с ограниченной скоростью
                 if (input.magnitude > 0.1f)
                 {
@@ -523,42 +552,39 @@ public class PlayerController : MonoBehaviour
                     velocity.z = Mathf.Lerp(velocity.z, targetVelocity.z, 4f * Time.deltaTime);
                 }
                 // Если нет ввода в воздухе, скорость остается неизменной (или можно добавить большее затухание)
-            }
-        }
     }
 
     // --- JUMP LOGIC ---
     void OnJumpPerformed(InputAction.CallbackContext context)
-    {
-        jumpBufferCounter = jumpBufferTime;
-    }
+        => jumpBufferCounter = jumpBufferTime;
 
+    void IJumping.HandleJump() => HandleJump();
     void HandleJump()
     {
-        if (!allowJump) return;
-
-        bool isWallSliding = wallNormal != Vector3.zero && !characterController.isGrounded && !hasJumpedFromWall;
-        bool canGroundJump = characterController.isGrounded || coyoteTimeCounter > 0;
-
+        if (!allowJump)
+            return;
+        
         if (jumpBufferCounter > 0)
         {
             // 1. WALL JUMP (Приоритет выше, если мы в воздухе у стены)
-            if (isWallSliding && !wallJumpCooldownSystem.IsOnCooldown)
+            if (CanPerformWallJump)
             {
                 wallJumpCooldownSystem.ActivateCooldown();
-                if (slideBoost.magnitude > 0.1f) slideBoost = Vector3.zero;
+                if (slideBoost.magnitude > 0.1f)
+                    slideBoost = Vector3.zero;
+
                 // Текущая горизонтальная скорость перед отскоком
-                Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-                
+                Vector3 currentHorizontalVelocity = new(velocity.x, 0f, velocity.z);
+
                 // Отражаем горизонтальную скорость относительно нормали стены
                 Vector3 reflectedHorizontalVelocity = Vector3.Reflect(currentHorizontalVelocity, wallNormal);
-                
+
                 // Вертикальная сила (только вверх)
-                float wallJumpVForce = Mathf.Sqrt(wallJumpHeight * -2f * gravity);
-                
+                float wallJumpVForce = Mathf.Sqrt(wallJumpHeight * -2f * gravityDirection.y);
+
                 // Применяем силу отскока к отраженной горизонтальной скорости
                 Vector3 wallJumpHorizontalVelocity = reflectedHorizontalVelocity.normalized * wallJumpForce;
-                
+
                 // Итоговая скорость: горизонтальная сила отскока + вертикальная сила прыжка
                 velocity = new Vector3(wallJumpHorizontalVelocity.x, wallJumpVForce, wallJumpHorizontalVelocity.z);
 
@@ -568,70 +594,54 @@ public class PlayerController : MonoBehaviour
                 // Устанавливаем флаг, что отскок был использован
                 hasJumpedFromWall = true;
 
-                // Сброс
-                jumpBufferCounter = 0f;
-                coyoteTimeCounter = 0f;
-                wallNormal = Vector3.zero; 
-                
-                // Если был подкат, прерываем его
-                if (isSliding) EndSlide();
+                wallNormal = Vector3.zero;
             }
             // 2. GROUND JUMP
-            else if (canGroundJump)
-            {
-                float baseJumpForce = Mathf.Sqrt(jumpHeight * -2f * gravity);
+            else if (CanPerformJump)
+                velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravityDirection.y);
 
-                float totalJumpForce = baseJumpForce;
-                velocity.y = totalJumpForce;
-                
-                jumpBufferCounter = 0f;
-                coyoteTimeCounter = 0f;
-
-                // Прыжок прерывает подкат
-                if (isSliding) EndSlide();
-            }
+            ResetTimers();
+            // Если был подкат, прерываем его
+            if (isSliding)
+                EndSlide();
         }
     }
 
+    #region DASH
     void OnDashPerformed(InputAction.CallbackContext context)
     {
-        // Проверяем кулдаун деша
-        if (dashCooldownSystem.IsOnCooldown) return; 
+        if (!CanPerformDash)
+            return;
         dashCooldownSystem.ActivateCooldown();
+        StartDash();
+    }
 
+    void IDashing.Activate() => StartDash();
+    private void StartDash()
+    {
         isDashing = true;
-
         velocity = Vector3.zero;
 
         Vector3 dashDirection;
 
-        if(characterController.isGrounded)
-        {
+        if (characterController.isGrounded)
             dashDirection = moveDirection.normalized;
-        }
         else
         {
             Vector2 inputVector = Vector2.zero;
             if (movementAction?.action != null)
-            {
                 inputVector = movementAction.action.ReadValue<Vector2>();
-            }
 
             if (inputVector.magnitude == 0)
-            {
                 dashDirection = cameraRoot.transform.forward;
-            }
             else
             {
                 Vector3 inputWorldDirection = inputVector.x * cameraRoot.transform.right + inputVector.y * cameraRoot.transform.forward;
                 dashDirection = inputWorldDirection.normalized;
             }
-
             velocity.y = 0;
         }
-
         velocity = dashDirection.normalized * dashSpeed;
-
         StartCoroutine(ReturnToNormal(dashDuration));
     }
 
@@ -642,76 +652,58 @@ public class PlayerController : MonoBehaviour
         // Возвращаем горизонтальную скорость до состояния до деша
         Vector2 input = Vector2.zero;
         if (movementAction?.action != null)
-        {
             input = movementAction.action.ReadValue<Vector2>();
-        }
         Vector3 expectedVelocity = transform.right * input.x + transform.forward * input.y;
-
         velocity = expectedVelocity * movementSpeed;
 
         // Сбрасываем флаг деша
         isDashing = false;
     }
+    #endregion
 
-    // --- SLIDE LOGIC (Script 1) ---
+    #region SLIDE
     private void OnSlidePerformed(InputAction.CallbackContext context)
     {
-        if (slideCooldownSystem.IsOnCooldown) return;
-
-        Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
-        
-        // Подкат возможен только на земле, если есть скорость и прошел кулдаун
-        if (characterController.isGrounded && !isSliding)
-        {
-            slideCooldownSystem.ActivateCooldown();
-            StartSlide();
-        }
+        if (!CanPerformSlide)
+            return;
+        // Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z); // ?
+        slideCooldownSystem.ActivateCooldown();
+        StartSlide();
     }
 
+    void ISliding.Activate() => HandleSlide();
     private void HandleSlide()
     {
         if (!isSliding)
         {
             // Плавное затухание слайд-буста на земле
             if (characterController.isGrounded && slideBoost.magnitude > 0.1f)
-            {
                 slideBoost = Vector3.Lerp(slideBoost, Vector3.zero, 2f * Time.deltaTime);
-            }
-            
             LerpHeightAndCameraBack();
             return;
         }
-
         UpdateSlide();
         if (slideTimer <= 0 || IsBlockedAbove())
-        {
             EndSlide();
-        }
     }
 
     private void StartSlide()
     {
         isSliding = true;
         slideTimer = slideDuration;
-        jumpBufferCounter = 0f;
-        coyoteTimeCounter = 0f;
+        ResetTimers();
 
         // Получаем направление взгляда камеры, проецируем его на горизонтальную плоскость
         Vector3 lookDir = cameraRoot.transform.forward;
         lookDir.y = 0f; // проецируем на ground plane
         if (lookDir.magnitude < 0.01f) // если почти вертикальный взгляд (вверх/вниз), используем forward персонажа как fallback
-        {
-            lookDir = transform.forward;
-            lookDir.y = 0f;
-        }
+            lookDir = new(transform.forward.x, 0f, transform.forward.z);
         lookDir.Normalize();
 
         // Формируем slideBoost в направлении взгляда (по горизонтали)
         slideBoost = lookDir * slideSpeedBonus;
-
         // Немедленно применяем буст к скорости (для мгновенного эффекта)
         velocity += slideBoost;
-
         // Устанавливаем высоту и камеру
         characterController.height = slideHeight;
         if (cameraRoot != null)
@@ -719,7 +711,6 @@ public class PlayerController : MonoBehaviour
             Vector3 targetCameraPos = originalCameraLocalPos + new Vector3(0f, cameraSlideOffset, 0f);
             cameraRoot.localPosition = targetCameraPos; // мгновенная установка, либо плавная — как у вас сейчас
         }
-
         // Отключаем другие виды инерции
         // hasMomentum = false; — не используется
         // momentumTimer = 0f; — не используется
@@ -728,10 +719,7 @@ public class PlayerController : MonoBehaviour
     private void UpdateSlide()
     {
         if (!(slideTimer < 0.1f && IsBlockedAbove()))
-        {
             slideTimer -= Time.deltaTime;
-        }
-
         // Плавное уменьшение высоты персонажа во время слайда
         characterController.height = Mathf.Lerp(characterController.height, slideHeight, heightLerpSpeed * Time.deltaTime);
 
@@ -742,66 +730,48 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void EndSlide()
+    {
+        if (!IsBlockedAbove()) // Только завершаем слайд, если можем встать
+            isSliding = false;
+    }
+
     private bool IsBlockedAbove()
     {
         Vector3 rayStart = transform.position + Vector3.up * (originalHeight - slideHeight) / 2f;
         float rayDistance = originalHeight / 2f + 0.1f;
-        
-        if (Physics.Raycast(rayStart, Vector3.up, rayDistance, ~0, QueryTriggerInteraction.Ignore))
-        {
-            return true;
-        }
-        return false;
-    }
-
-    private void EndSlide()
-    {
-        // Только завершаем слайд, если можем встать
-        if (!IsBlockedAbove())
-        {
-            isSliding = false;
-        }
+        return Physics.Raycast(rayStart, Vector3.up, rayDistance, ~0, QueryTriggerInteraction.Ignore);
     }
 
     private void LerpHeightAndCameraBack()
     {
         // Плавный возврат высоты и камеры
         if (Mathf.Abs(characterController.height - originalHeight) > 0.01f)
-        {
             characterController.height = Mathf.Lerp(characterController.height, originalHeight, heightLerpSpeed * Time.deltaTime);
-        }
-
         if (cameraRoot != null && Vector3.Distance(cameraRoot.localPosition, originalCameraLocalPos) > 0.01f)
-        {
             cameraRoot.localPosition = Vector3.Lerp(cameraRoot.localPosition, originalCameraLocalPos, heightLerpSpeed * Time.deltaTime);
-        }
     }
+    #endregion
 
-    public void AddExternalImpulse(Vector3 impulse)
-    {
-        velocity += impulse;
-    }
+    //public void AddExternalImpulse(Vector3 impulse)
+    //    => velocity += impulse;
 
-    public void ResetVelocity()
-    {
-        velocity = Vector3.zero;
-        isDashing = false;
-        wallJumpMomentum = Vector3.zero;
-    }
+    //public void ResetVelocity()
+    //{
+    //    velocity = Vector3.zero;
+    //    isDashing = false;
+    //    wallJumpMomentum = Vector3.zero;
+    //}
 
     public void SetVelocity(Vector3 newVelocity)
     {
         velocity = newVelocity;
-
         // Сброс инерции от других механик
         isDashing = false;
         wallJumpMomentum = Vector3.zero;
-
         // --- ИСПРАВЛЕНИЕ ПРЫЖКА ---
         // Принудительно обнуляем таймеры, чтобы койот-тайм не сработал
-        coyoteTimeCounter = 0f;
-        jumpBufferCounter = 0f;
-        
+        ResetTimers();
         // Говорим контроллеру, что в прошлом кадре мы НЕ были на земле.
         // Это предотвратит активацию койота в следующем кадре Update.
         wasGroundedLastFrame = false; 
