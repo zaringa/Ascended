@@ -1,20 +1,42 @@
 using Player.Items.Implants.Base;
 using Player.Items.Implants.Interfaces;
 using UnityEngine;
+using Systems.Stats;
+using System.Collections.Generic;
 
 namespace Player.Items.Implants.Impl
 {
-    public class DamageBoostImplant : SmallImplant, IDamageModifier
+    /// <summary>
+    /// Редкий имплант, увеличивающий урон.
+    /// Устанавливается в слот для малых имплантов (Small).
+    /// </summary>
+    [CreateAssetMenu(fileName = "DamageBoostImplant", menuName = "Inventory/Implants/Rare/DamageBoost")]
+    public class DamageBoostImplant : SmallImplant, IStatModifierSource
     {
-        [SerializeField] private float baseBonus = 0.10f;
-        [SerializeField] private float perStack = 0.05f;
-        private int stack = 1;
-
-        public float ModifyDamage(float damage)
+        [Header("Damage Boost")]
+        public float baseBonus = 0.10f;
+        public float perStack = 0.05f;
+        
+        [SerializeField] private List<ModifierData> _modifiers;
+        
+        private void OnEnable()
         {
-            float bonus = baseBonus + perStack * (stack - 1);
+            rarity = ImplantRarity.Rare;
+            
+            _modifiers = new List<ModifierData>
+            {
+                new ModifierData
+                {
+                    statType = StatType.Damage,
+                    modifierType = ModifierType.PercentAdd,
+                    value = baseBonus + perStack * 0 // Для стека 1
+                }
+            };
+        }
 
-            return damage * (1f + bonus);
+        public IEnumerable<ModifierData> GetModifiers()
+        {
+            return _modifiers;
         }
 
         public override void Action() {}

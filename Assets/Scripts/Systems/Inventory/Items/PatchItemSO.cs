@@ -11,9 +11,9 @@ namespace Systems.Inventory.Items
     {
         [Header("Patch Specifics")]
         public bool isRare; // Можно заменить на Enum Rarity позже
-        
+
         [Tooltip("Список статов, которые дает этот патч")]
-        [SerializeField] private List<ModifierData> _modifiers;
+        [SerializeField] protected List<ModifierData> _modifiers;
 
         // Реализация интерфейса: отдаем "сырые" данные о модификаторах
         public IEnumerable<ModifierData> GetModifiers()

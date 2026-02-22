@@ -1,10 +1,17 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Player.Movement;
+using Player.Items.Implants.Movement;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerController : MonoBehaviour
 {
+
+    [Header("Inventory Reference")]
+    [SerializeField] private Player.Inventory.Inventory inventory;
+    
+    private IMovementHandler movementHandler;
 
     [Header("Input")]
     [SerializeField] private InputActionReference movementAction;
@@ -121,6 +128,17 @@ public class PlayerController : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
         originalHeight = characterController.height;
+        
+        // Инициализация Inventory
+        if (inventory == null)
+        {
+            inventory = GetComponent<Player.Inventory.Inventory>();
+        }
+        
+        Debug.Log($"PlayerController.Awake() - inventory: {(inventory != null ? "FOUND" : "NOT FOUND")}");
+        
+        // По умолчанию используем стандартный обработчик движения
+        movementHandler = new DefaultMovementHandler();
 
         if (cameraRoot != null)
         {
@@ -216,6 +234,9 @@ public class PlayerController : MonoBehaviour
         dashCooldownSystem.UpdateCooldown(Time.deltaTime);
         slideCooldownSystem.UpdateCooldown(Time.deltaTime);
         wallJumpCooldownSystem.UpdateCooldown(Time.deltaTime);
+        
+        // Проверяем, изменился ли имплант ног
+        UpdateMovementHandler();
 
         // Fallback: Direct keyboard input for actions if InputActionReferences are not set
         if (jumpAction?.action == null && Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
@@ -530,6 +551,21 @@ public class PlayerController : MonoBehaviour
     // --- JUMP LOGIC ---
     void OnJumpPerformed(InputAction.CallbackContext context)
     {
+        // Проверяем, позволяет ли имплант делать прыжок
+        if (!movementHandler.CanJump())
+        {
+            Debug.Log("Jump blocked by implant");
+            return;
+        }
+        
+        // Если это имплант прыжка, используем его логику
+        if (movementHandler is JumpMovementHandler jumpHandler)
+        {
+            Debug.Log($"Using JumpImplant: force={jumpHandler.implant.jumpForce}, doubleJump={jumpHandler.implant.allowDoubleJump}");
+            jumpHandler.PerformJump();
+            return;
+        }
+        
         jumpBufferCounter = jumpBufferTime;
     }
 
@@ -595,8 +631,23 @@ public class PlayerController : MonoBehaviour
 
     void OnDashPerformed(InputAction.CallbackContext context)
     {
+        // Проверяем, позволяет ли имплант делать рывок
+        if (!movementHandler.CanDash())
+        {
+            Debug.Log("Dash blocked by implant");
+            return;
+        }
+        
+        // Если это имплант рывка, используем его логику
+        if (movementHandler is DashMovementHandler dashHandler)
+        {
+            Debug.Log($"Using DashImplant: distance={dashHandler.implant.dashDistance}, speed={dashHandler.implant.dashSpeed}");
+            dashHandler.PerformDash();
+            return;
+        }
+        
         // Проверяем кулдаун деша
-        if (dashCooldownSystem.IsOnCooldown) return; 
+        if (dashCooldownSystem.IsOnCooldown) return;
         dashCooldownSystem.ActivateCooldown();
 
         isDashing = true;
@@ -656,6 +707,21 @@ public class PlayerController : MonoBehaviour
     // --- SLIDE LOGIC (Script 1) ---
     private void OnSlidePerformed(InputAction.CallbackContext context)
     {
+        // Проверяем, позволяет ли имплант делать слайд
+        if (!movementHandler.CanSlide())
+        {
+            Debug.Log("Slide blocked by implant");
+            return;
+        }
+        
+        // Если это имплант слайда, используем его логику
+        if (movementHandler is SlideMovementHandler slideHandler)
+        {
+            Debug.Log($"Using SlideImplant: duration={slideHandler.implant.slideDuration}, speed={slideHandler.implant.slideSpeedMultiplier}");
+            slideHandler.PerformSlide();
+            return;
+        }
+        
         if (slideCooldownSystem.IsOnCooldown) return;
 
         Vector3 currentHorizontalVelocity = new Vector3(velocity.x, 0f, velocity.z);
@@ -801,9 +867,39 @@ public class PlayerController : MonoBehaviour
         // Принудительно обнуляем таймеры, чтобы койот-тайм не сработал
         coyoteTimeCounter = 0f;
         jumpBufferCounter = 0f;
-        
+
         // Говорим контроллеру, что в прошлом кадре мы НЕ были на земле.
         // Это предотвратит активацию койота в следующем кадре Update.
-        wasGroundedLastFrame = false; 
+        wasGroundedLastFrame = false;
+    }
+    
+    /// <summary>
+    /// Обновляет обработчик движения на основе экипированного импланта
+    /// </summary>
+    private void UpdateMovementHandler()
+    {
+        if (inventory != null)
+        {
+            var legsImplant = inventory.GetLegsImplant();
+            
+            IMovementHandler newHandler;
+            
+            if (legsImplant != null)
+            {
+                var customHandler = legsImplant.GetMovementHandler();
+                newHandler = customHandler ?? new DefaultMovementHandler();
+            }
+            else
+            {
+                newHandler = new DefaultMovementHandler();
+            }
+            
+            // Логируем только при реальном переключении
+            if (movementHandler?.GetType() != newHandler?.GetType())
+            {
+                movementHandler = newHandler;
+                Debug.Log($"✓ Switched to implant movement handler: {(movementHandler != null ? movementHandler.GetType().Name : "null")}");
+            }
+        }
     }
 }

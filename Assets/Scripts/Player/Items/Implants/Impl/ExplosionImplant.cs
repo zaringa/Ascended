@@ -5,11 +5,18 @@ using UnityEngine;
 
 namespace Player.Items.Implants.Impl
 {
-    public class ExplosionImplant : SmallImplant, IOnHit
+    /// <summary>
+    /// Редкий имплант - шанс вызвать взрыв при попадании.
+    /// Устанавливается в слот для малых имплантов (Small).
+    /// </summary>
+    [CreateAssetMenu(fileName = "ExplosionImplant", menuName = "Inventory/Implants/Rare/Explosion")]
+    public class ExplosionImplant : SmallImplant, IConditionalImplant, IOnHit
     {
-        [SerializeField] private float baseChance = 0.10f;
-        [SerializeField] private float baseExplosionDamage = 0.20f;
-        [SerializeField] private float perStackDamage = 0.10f;
+        [Header("Explosion")]
+        public float baseChance = 0.10f;
+        public float baseExplosionDamage = 0.20f;
+        public float perStackDamage = 0.10f;
+        
         private int stack = 1;
 
         public void OnHit(IEnemy target, ref float damage)
@@ -22,6 +29,18 @@ namespace Player.Items.Implants.Impl
                 // Вызвать взрыв
                 target.ApplyExplosionDamage(finalDmg);
             }
+        }
+
+        public void SubscribeToEvents()
+        {
+            // Подписываемся на событие попадания
+            // PlayerCombatManager.OnHit += OnHit;
+        }
+
+        public void UnsubscribeFromEvents()
+        {
+            // Отписываемся от события попадания
+            // PlayerCombatManager.OnHit -= OnHit;
         }
 
         public override void Action() {}

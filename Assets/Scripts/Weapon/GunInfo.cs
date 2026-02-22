@@ -2,14 +2,15 @@ using Player.Items;
 using UnityEngine;
 using Systems.Stats;
 using System.Collections.Generic;
+using Systems.Inventory.Affixes;
 
 [CreateAssetMenu(fileName = "NewGunInfo", menuName = "Game/Gun Info")]
-public class GunInfo : RenderableItem, IStatModifierSource 
+public class GunInfo : RenderableItem, IStatModifierSource
 {
     [Header("Идентификация")]
     public string gunName = "Default Weapon";
     public Sprite weaponSprite;
-    
+
     // Перечисление для типизации оружия
     public enum WeaponType { Melee, Firearm };
     public WeaponType type = WeaponType.Firearm;
@@ -45,6 +46,11 @@ public class GunInfo : RenderableItem, IStatModifierSource
     public AudioClip reloadSound;
     public AudioClip meleeSwingSound;
     public AudioClip meleeHitSound;
+    
+    [Header("Накладываемые характеристики")]
+    public WeaponRarity rarity = WeaponRarity.Standard;
+    public WeaponTag tags;
+    public List<AffixInstance> affixes = new List<AffixInstance>();
 
     private void OnValidate()
     {
@@ -82,24 +88,145 @@ public class GunInfo : RenderableItem, IStatModifierSource
         var modifiers = new List<ModifierData>();
 
         // Превращаем старые поля GunInfo в новые Модификаторы
-        
-        // 1. Урон
         modifiers.Add(new ModifierData {
             statType = StatType.Damage,
             modifierType = ModifierType.Flat,
             value = damage
         });
 
-        // 2. Скорострельность
         modifiers.Add(new ModifierData {
             statType = StatType.FireRate,
             modifierType = ModifierType.Flat,
             value = fireRate
         });
 
-        // 3. Магазин (если есть такой тип статы)
-        // modifiers.Add(new ModifierData { ... value = maxMagazineCapacity ... });
+        // Модификаторы от аффиксов
+        foreach(var affixInstance in affixes)
+        {
+            if(affixInstance.isEquipped && affixInstance.affix != null)
+            {
+                var affixModifiers = affixInstance.affix.GetModifiers();
+                foreach(var modifier in affixModifiers)
+                {
+                    modifiers.Add(modifier);
+                }
+            }
+        }
 
         return modifiers;
+    }
+    
+    // Методы для работы с аффиксами
+    public bool CanAddAffix(AffixSO affix)
+    {
+        // Проверяем, соответствует ли редкость аффикса редкости оружия
+        if(affix.requiredRarity > this.rarity)
+            return false;
+            
+        // Проверяем количество доступных слотов
+        int staticSlots = GetAvailableStaticSlots();
+        int conditionalSlots = GetAvailableConditionalSlots();
+        
+        if(affix.affixType == AffixType.Static)
+            return GetEquippedStaticAffixesCount() < staticSlots;
+        else
+            return GetEquippedConditionalAffixesCount() < conditionalSlots;
+    }
+    
+    public bool AddAffix(AffixSO affix)
+    {
+        if(!CanAddAffix(affix))
+            return false;
+            
+        affixes.Add(new AffixInstance { affix = affix, isEquipped = false });
+        return true;
+    }
+    
+    public bool EquipAffix(AffixSO affix)
+    {
+        for(int i = 0; i < affixes.Count; i++)
+        {
+            if(affixes[i].affix == affix && !affixes[i].isEquipped)
+            {
+                // Проверяем, есть ли место для экипировки
+                if(affix.affixType == AffixType.Static && GetEquippedStaticAffixesCount() < GetAvailableStaticSlots())
+                {
+                    affixes[i].isEquipped = true;
+                    return true;
+                }
+                else if(affix.affixType == AffixType.Conditional && GetEquippedConditionalAffixesCount() < GetAvailableConditionalSlots())
+                {
+                    affixes[i].isEquipped = true;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    public bool UnequipAffix(AffixSO affix)
+    {
+        for(int i = 0; i < affixes.Count; i++)
+        {
+            if(affixes[i].affix == affix && affixes[i].isEquipped)
+            {
+                affixes[i].isEquipped = false;
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private int GetAvailableStaticSlots()
+    {
+        switch(rarity)
+        {
+            case WeaponRarity.Uncommon:
+            case WeaponRarity.Rare:
+                return 1;
+            case WeaponRarity.Epic:
+                return 2;
+            case WeaponRarity.Legendary:
+                return 2;
+            default:
+                return 0;
+        }
+    }
+    
+    private int GetAvailableConditionalSlots()
+    {
+        switch(rarity)
+        {
+            case WeaponRarity.Rare:
+                return 1;
+            case WeaponRarity.Epic:
+                return 1;
+            case WeaponRarity.Legendary:
+                return 2;
+            default:
+                return 0;
+        }
+    }
+    
+    private int GetEquippedStaticAffixesCount()
+    {
+        int count = 0;
+        foreach(var affixInstance in affixes)
+        {
+            if(affixInstance.isEquipped && affixInstance.affix != null && affixInstance.affix.affixType == AffixType.Static)
+                count++;
+        }
+        return count;
+    }
+    
+    private int GetEquippedConditionalAffixesCount()
+    {
+        int count = 0;
+        foreach(var affixInstance in affixes)
+        {
+            if(affixInstance.isEquipped && affixInstance.affix != null && affixInstance.affix.affixType == AffixType.Conditional)
+                count++;
+        }
+        return count;
     }
 }
